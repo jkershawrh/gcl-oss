@@ -20,6 +20,9 @@ Do not disclose suspected vulnerabilities in a public issue.
 - The signed package binds policy results, constraints, objective, candidates, alternatives, and falsification results.
 - Model-assisted output cannot choose the committed action or bypass hard constraints, and every such boundary requires deterministic fallback.
 - Evidence remains untrusted until producer, schema, scope, freshness, and provenance are validated.
+- Artifact verification requires exact registry and token-service allowlists, bounded
+  responses, digest-pinned references, and positive receipts that identify the verifier
+  and every verified descriptor. A receipt proves byte integrity, not semantic truth.
 - Optional integrations cannot silently widen authority when unavailable.
 - Production key material comes from external key or secret management.
 

@@ -1,0 +1,25 @@
+{
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/artifact-verification-request.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A host request to resolve and cryptographically verify one artifact.",
+  "properties": {
+    "artifact_uri": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Artifact Uri",
+      "type": "string"
+    },
+    "expected_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Expected Digest",
+      "type": "string"
+    }
+  },
+  "required": [
+    "artifact_uri",
+    "expected_digest"
+  ],
+  "title": "ArtifactVerificationRequest",
+  "type": "object"
+}

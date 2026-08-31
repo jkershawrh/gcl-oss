@@ -14,6 +14,7 @@ from gcl_oss.adapters.evalhub import (
     EVALHUB_EXTENSION_NAMESPACE,
     EVALHUB_JOB_SCHEMA_URI,
 )
+from gcl_oss.adapters.oci import OCI_DISTRIBUTION_VERIFIER
 from gcl_oss.contracts import (
     Constraint,
     ConstraintSource,
@@ -22,6 +23,7 @@ from gcl_oss.contracts import (
     PolicyResult,
     Scope,
 )
+from gcl_oss.ports import ArtifactVerificationReceipt
 
 EVALHUB_POLICY_PACK_URI = (
     "https://github.com/jkershawrh/gcl-oss/"
@@ -35,6 +37,7 @@ _EXT_JOB_ID = f"{EVALHUB_EXTENSION_NAMESPACE}/job-id"
 _EXT_JOB_STATE = f"{EVALHUB_EXTENSION_NAMESPACE}/job-state"
 _EXT_JOB_TEST_PRESENT = f"{EVALHUB_EXTENSION_NAMESPACE}/job-test-present"
 _EXT_OCI_ARTIFACTS = f"{EVALHUB_EXTENSION_NAMESPACE}/oci-artifacts"
+_EXT_OCI_VERIFICATIONS = f"{EVALHUB_EXTENSION_NAMESPACE}/oci-verifications"
 _EXT_PROVENANCE_MODE = f"{EVALHUB_EXTENSION_NAMESPACE}/provenance-mode"
 _EXT_RAW_RESPONSE_DIGEST = f"{EVALHUB_EXTENSION_NAMESPACE}/raw-response-digest"
 _EXT_RESULT_KIND = f"{EVALHUB_EXTENSION_NAMESPACE}/result-kind"
@@ -109,6 +112,71 @@ def _provenance_problem(item: EvidenceEnvelope) -> str | None:
     return None
 
 
+def _artifact_identity(artifact: object) -> tuple[str, int, str, str, str] | None:
+    if not isinstance(artifact, dict):
+        return None
+    benchmark_id = artifact.get("benchmark_id")
+    benchmark_index = artifact.get("benchmark_index")
+    provider_id = artifact.get("provider_id")
+    reference = artifact.get("reference")
+    digest = artifact.get("digest")
+    if (
+        not isinstance(benchmark_id, str)
+        or isinstance(benchmark_index, bool)
+        or not isinstance(benchmark_index, int)
+        or not isinstance(provider_id, str)
+        or not isinstance(reference, str)
+        or not isinstance(digest, str)
+    ):
+        return None
+    return benchmark_id, benchmark_index, provider_id, reference, digest
+
+
+def _verification_problem(
+    item: EvidenceEnvelope,
+    trusted_verifiers: frozenset[str],
+) -> str | None:
+    artifacts = item.extensions.get(_EXT_OCI_ARTIFACTS)
+    verifications = item.extensions.get(_EXT_OCI_VERIFICATIONS)
+    if not isinstance(artifacts, list) or not artifacts:
+        return "OCI manifest is empty"
+    if not isinstance(verifications, list) or len(verifications) != len(artifacts):
+        return "OCI content verification receipts are incomplete"
+
+    expected = [_artifact_identity(artifact) for artifact in artifacts]
+    observed = [_artifact_identity(verification) for verification in verifications]
+    if (
+        None in expected
+        or None in observed
+        or len(set(expected)) != len(expected)
+        or sorted(expected) != sorted(observed)
+    ):
+        return "OCI content verification receipts do not match the manifest"
+
+    for verification in verifications:
+        if not isinstance(verification, dict):
+            return "OCI content verification entry is not an object"
+        raw_receipt = verification.get("receipt")
+        try:
+            receipt = ArtifactVerificationReceipt.model_validate(raw_receipt)
+        except Exception:
+            return "OCI content verification receipt is invalid"
+        if receipt.verifier not in trusted_verifiers:
+            return "OCI content verification used an untrusted verifier"
+        if (
+            receipt.artifact_uri != verification.get("reference")
+            or receipt.artifact_digest != verification.get("digest")
+        ):
+            return "OCI content verification receipt is bound to different content"
+        if not receipt.content:
+            return "OCI content verification did not verify descriptor payloads"
+        if not (
+            item.metadata.observed_at <= receipt.verified_at <= item.metadata.expires_at
+        ):
+            return "OCI content verification is outside the evidence validity window"
+    return None
+
+
 class EvalHubEvidencePolicy:
     """Admit authenticated, terminal EvalHub evidence with explicit provenance."""
 
@@ -117,6 +185,8 @@ class EvalHubEvidencePolicy:
         *,
         expected_producer_prefix: str,
         require_oci_artifacts: bool = True,
+        require_verified_oci_artifacts: bool = False,
+        trusted_artifact_verifiers: Sequence[str] = (OCI_DISTRIBUTION_VERIFIER,),
         minimum_confidence: float = 1.0,
     ) -> None:
         parsed = urllib.parse.urlsplit(expected_producer_prefix)
@@ -126,6 +196,10 @@ class EvalHubEvidencePolicy:
             raise ValueError("minimum_confidence must be between 0 and 1")
         self._expected_producer_prefix = expected_producer_prefix
         self._require_oci_artifacts = require_oci_artifacts
+        self._require_verified_oci_artifacts = require_verified_oci_artifacts
+        self._trusted_artifact_verifiers = frozenset(trusted_artifact_verifiers)
+        if require_verified_oci_artifacts and not self._trusted_artifact_verifiers:
+            raise ValueError("at least one trusted artifact verifier is required")
         self._minimum_confidence = minimum_confidence
 
     @property
@@ -177,6 +251,13 @@ class EvalHubEvidencePolicy:
                 and item.extensions.get(_EXT_PROVENANCE_MODE) != "oci-manifest"
             ):
                 reasons.append(f"{item.metadata.id}: complete OCI provenance is required")
+            if self._require_verified_oci_artifacts:
+                verification_problem = _verification_problem(
+                    item,
+                    self._trusted_artifact_verifiers,
+                )
+                if verification_problem:
+                    reasons.append(f"{item.metadata.id}: {verification_problem}")
             if item.assurance.confidence < self._minimum_confidence:
                 reasons.append(f"{item.metadata.id}: confidence is below the policy floor")
 
@@ -184,7 +265,12 @@ class EvalHubEvidencePolicy:
             check_id="evalhub-evidence-v1alpha1",
             allowed=not reasons,
             reason=(
-                "all EvalHub evidence satisfies the pinned terminal-result contract"
+                (
+                    "all EvalHub evidence satisfies the pinned terminal-result contract "
+                    "with registry-verified OCI content"
+                    if self._require_verified_oci_artifacts
+                    else "all EvalHub evidence satisfies the pinned terminal-result contract"
+                )
                 if not reasons
                 else "; ".join(reasons)
             ),

@@ -7,7 +7,7 @@ GCL OSS integrates at evidence, policy, proposal, proof, telemetry, and outcome 
 | Integration | GCL port | Purpose | Priority |
 |---|---|---|---|
 | TrustyAI Service | `EvidenceSource`, `ConstraintClassifier` | Drift, fairness, and model-monitoring evidence plus reference governance constraints. | P0 |
-| EvalHub | `EvidenceSource`, `ConstraintClassifier` | Terminal evaluation and collection-compliance evidence plus reference promotion constraints. | P0 |
+| EvalHub | `EvidenceSource`, `ArtifactVerifier`, `ConstraintClassifier` | Terminal evaluation and collection-compliance evidence, verified artifacts, and reference promotion constraints. | P0 |
 | No-op consumer | `ProposalSink` | Standalone testing without external authority. | P0 |
 | Generic CloudEvents | `EvidenceSource`, `ProposalSink` | Portable asynchronous transport. | P1 |
 | Authenticated webhook | `ProposalSink` | Generic external admission with explicit retry semantics. | P1 |
@@ -49,8 +49,10 @@ execution is kept distinct from a failed model test.
 
 Transport and normalization live in `gcl_oss.adapters.evalhub`. Evidence admission and
 promotion constraints live in `gcl_oss.policy_packs.evalhub`. The default policy
-requires complete digest-pinned OCI provenance for evaluation results. See the
-[EvalHub integration specification](evalhub-integration.md).
+requires complete digest-pinned OCI provenance for evaluation results. A stricter host
+mode runs every declared artifact through `ArtifactVerifier` and requires trusted,
+evidence-bound receipts before policy admission. See the [EvalHub integration
+specification](evalhub-integration.md).
 
 The first end-to-end demo should be:
 

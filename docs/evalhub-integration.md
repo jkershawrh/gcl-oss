@@ -71,10 +71,22 @@ The default EvalHub policy requires complete OCI provenance for evaluation resul
 fails closed on the fallback. Hosts may relax that setting explicitly for development,
 but must not describe response-only evidence as immutable artifact evidence.
 
-The adapter verifies that every OCI reference ends with its declared digest. It does
-not pull or independently verify registry bytes. A production host that claims artifact
-verification must add registry authentication and content verification at its trust
-boundary.
+Normalization verifies that every OCI reference ends with its declared digest but does
+not perform network I/O. A host can additionally pass the evidence through the generic
+`ArtifactVerifier` port. The included OCI Distribution verifier fetches the leaf
+manifest by digest, recomputes its SHA-256 digest, and verifies every config and layer
+descriptor's bytes, digest, declared size, and media type. The resulting positive
+receipt is bound to each normalized benchmark artifact. Strict EvalHub policy accepts
+only complete receipts from an explicitly trusted verifier identity.
+
+Registry access is fail-closed: each registry host must be exactly allowlisted, HTTPS
+is required by default, custom CAs are additive to system trust, and credentials are
+read from a Docker auth file or a username plus password/token file. OCI Bearer token
+requests are reduced to the exact repository pull scope. A token service on a different
+host also requires an explicit `--registry-auth-host-allow`. Response sizes are
+bounded, compressed responses and cross-origin redirects are rejected, and
+index/manifest-list selection is not supported in this alpha. The verifier accepts OCI
+image manifests and Docker schema-2 leaf manifests.
 
 ## Offline demonstration
 
@@ -149,6 +161,27 @@ gcl-oss evalhub-live \
 token. The live command fetches once, uses the current UTC clock for freshness checks,
 and sends the resulting package only to the no-op proposal sink.
 
+Require independent registry-byte verification by adding the registry boundary:
+
+```bash
+gcl-oss evalhub-live \
+  --base-url https://evalhub.example \
+  --job-id JOB_ID \
+  --tenant team-a \
+  --namespace team-a \
+  --environment staging \
+  --token-file /var/run/secrets/kubernetes.io/serviceaccount/token \
+  --ca-file /etc/evalhub-ca/service-ca.crt \
+  --verify-oci \
+  --registry-allow registry.example \
+  --registry-username serviceaccount \
+  --registry-password-file /var/run/secrets/kubernetes.io/serviceaccount/token \
+  --registry-ca-file /etc/registry-ca/ca.crt
+```
+
+Secrets are deliberately excluded from command-line values. `oci-verify` exposes the
+same standalone verification boundary for a single digest-pinned reference.
+
 ## Failure behavior
 
 The integration fails closed on:
@@ -157,6 +190,9 @@ The integration fails closed on:
 - missing resource identity, tenant, timestamp, model, or required results;
 - tenant mismatch;
 - invalid or mismatched OCI reference and digest;
+- unapproved registries, manifest or descriptor byte mismatches, unsupported manifest
+  graphs, unsafe redirects, authentication failures, or response-size violations when
+  registry verification is enabled;
 - non-finite or non-JSON source material;
 - unsupported schema revision at the policy boundary;
 - missing overall compliance test;
@@ -184,6 +220,6 @@ in [`deploy/oberon`](../deploy/oberon/README.md).
 
 Before the EvalHub milestone is called complete:
 
-1. verify OCI content against the registry rather than only verifying reference shape;
+1. qualify registry-content verification against the isolated Oberon deployment;
 2. add an upstream-owned fixture or conformance vector;
 3. confirm the mapping with EvalHub maintainers.

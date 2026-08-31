@@ -12,6 +12,8 @@ from importlib import resources
 from pathlib import Path
 
 from gcl_oss.adapters.evalhub import EvalHubHTTPClient, normalize_evalhub_job
+from gcl_oss.adapters.evalhub_oci import verify_evalhub_oci_artifacts
+from gcl_oss.adapters.oci import OCIRegistryVerifier, parse_oci_reference
 from gcl_oss.builtin import (
     EvidenceFreshnessCheck,
     FailedMeasurementConstraintClassifier,
@@ -39,6 +41,7 @@ from gcl_oss.policy_packs.evalhub import (
     EvalHubEvidencePolicy,
     EvalHubPromotionConstraintClassifier,
 )
+from gcl_oss.ports import ArtifactVerificationRequest
 from gcl_oss.schemas import write_schemas
 
 
@@ -164,6 +167,7 @@ async def _run_evalhub_cycle(
     now: datetime,
     key_id: str,
     proposer: ProposerIdentity,
+    require_verified_oci_artifacts: bool = False,
 ) -> dict:
     sink = NoOpProposalSink()
     proof = MemoryProofRecorder()
@@ -181,7 +185,10 @@ async def _run_evalhub_cycle(
         proposer=proposer,
         proposal_sink=sink,
         policy_checks=[
-            EvalHubEvidencePolicy(expected_producer_prefix=source_base_url)
+            EvalHubEvidencePolicy(
+                expected_producer_prefix=source_base_url,
+                require_verified_oci_artifacts=require_verified_oci_artifacts,
+            )
         ],
         proof_recorders=[proof],
         clock=lambda: now,
@@ -229,6 +236,8 @@ async def _run_evalhub_live(args: argparse.Namespace) -> dict:
         validity=timedelta(minutes=args.validity_minutes),
         model_version=args.model_version,
     )
+    if args.verify_oci:
+        item = await verify_evalhub_oci_artifacts(item, _oci_verifier(args))
     workload_identity = args.workload_identity or (
         f"spiffe://{args.trust_domain}/ns/{scope.namespace}/sa/gcl-oss-qualifier"
     )
@@ -242,7 +251,86 @@ async def _run_evalhub_live(args: argparse.Namespace) -> dict:
             workload_identity=workload_identity,
             trust_domain=args.trust_domain,
         ),
+        require_verified_oci_artifacts=args.verify_oci,
     )
+
+
+def _add_registry_arguments(
+    parser: argparse.ArgumentParser,
+    *,
+    allow_required: bool,
+) -> None:
+    parser.add_argument(
+        "--registry-allow",
+        action="append",
+        default=[],
+        required=allow_required,
+        metavar="HOST[:PORT]",
+        help="exact registry authority allowed for verification; repeatable",
+    )
+    parser.add_argument(
+        "--registry-auth-file",
+        type=Path,
+        help="Docker config JSON containing registry credentials",
+    )
+    parser.add_argument(
+        "--registry-auth-host-allow",
+        action="append",
+        default=[],
+        metavar="HOST[:PORT]",
+        help="additional exact token-service authority; repeatable",
+    )
+    parser.add_argument("--registry-username")
+    parser.add_argument(
+        "--registry-password-file",
+        type=Path,
+        help="file containing the registry password or projected token",
+    )
+    parser.add_argument("--registry-ca-file", type=Path)
+    parser.add_argument("--registry-timeout", type=float, default=10.0)
+    parser.add_argument(
+        "--registry-max-manifest-bytes",
+        type=int,
+        default=4 * 1024 * 1024,
+    )
+    parser.add_argument(
+        "--registry-max-blob-bytes",
+        type=int,
+        default=32 * 1024 * 1024,
+    )
+    parser.add_argument(
+        "--registry-max-total-bytes",
+        type=int,
+        default=64 * 1024 * 1024,
+    )
+    parser.add_argument("--allow-insecure-registry", action="store_true")
+
+
+def _oci_verifier(args: argparse.Namespace) -> OCIRegistryVerifier:
+    return OCIRegistryVerifier(
+        allowed_registries=args.registry_allow,
+        allowed_auth_hosts=args.registry_auth_host_allow,
+        auth_file=args.registry_auth_file,
+        username=args.registry_username,
+        password_file=args.registry_password_file,
+        ca_file=args.registry_ca_file,
+        timeout=args.registry_timeout,
+        max_manifest_bytes=args.registry_max_manifest_bytes,
+        max_blob_bytes=args.registry_max_blob_bytes,
+        max_total_bytes=args.registry_max_total_bytes,
+        allow_insecure_http=args.allow_insecure_registry,
+    )
+
+
+async def _run_oci_verify(args: argparse.Namespace) -> dict:
+    reference = parse_oci_reference(args.reference)
+    receipt = await _oci_verifier(args).verify(
+        ArtifactVerificationRequest(
+            artifact_uri=args.reference,
+            expected_digest=reference.digest,
+        )
+    )
+    return receipt.model_dump(mode="json", exclude_none=True)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -286,6 +374,18 @@ def _parser() -> argparse.ArgumentParser:
     evalhub_live.add_argument("--allow-insecure-http", action="store_true")
     evalhub_live.add_argument("--trust-domain", default="cluster.local")
     evalhub_live.add_argument("--workload-identity")
+    evalhub_live.add_argument(
+        "--verify-oci",
+        action="store_true",
+        help="fetch and verify every OCI manifest and descriptor before policy admission",
+    )
+    _add_registry_arguments(evalhub_live, allow_required=False)
+    oci_verify = subcommands.add_parser(
+        "oci-verify",
+        help="verify a digest-pinned OCI manifest and all config/layer content",
+    )
+    oci_verify.add_argument("--reference", required=True)
+    _add_registry_arguments(oci_verify, allow_required=True)
     schemas = subcommands.add_parser("schemas", help="write the versioned JSON Schemas")
     schemas.add_argument("--output", type=Path, default=Path("schemas"))
     return parser
@@ -319,6 +419,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "evalhub-live":
         payload = asyncio.run(_run_evalhub_live(args))
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    if args.command == "oci-verify":
+        payload = asyncio.run(_run_oci_verify(args))
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
     raise AssertionError(f"unhandled command: {args.command}")

@@ -14,12 +14,24 @@ from gcl_oss.contracts import (
     PolicyResult,
     SignedDecisionPackage,
 )
-from gcl_oss.ports import ProposalReceipt
+from gcl_oss.ports import (
+    ArtifactVerificationReceipt,
+    ArtifactVerificationRequest,
+    ProposalReceipt,
+)
 from gcl_oss.registry import ActionDefinition
 
 SCHEMA_BASE = "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas"
 
 SCHEMA_MODELS: dict[str, tuple[type[BaseModel], str]] = {
+    "artifact-verification-receipt.v1alpha1.schema.json": (
+        ArtifactVerificationReceipt,
+        f"{SCHEMA_BASE}/artifact-verification-receipt.v1alpha1.schema.json",
+    ),
+    "artifact-verification-request.v1alpha1.schema.json": (
+        ArtifactVerificationRequest,
+        f"{SCHEMA_BASE}/artifact-verification-request.v1alpha1.schema.json",
+    ),
     "action-definition.v1alpha1.schema.json": (
         ActionDefinition,
         f"{SCHEMA_BASE}/action-definition.v1alpha1.schema.json",

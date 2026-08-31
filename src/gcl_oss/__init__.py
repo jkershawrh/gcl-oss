@@ -33,6 +33,9 @@ from gcl_oss.kernel import (
     cycle_key_for,
 )
 from gcl_oss.ports import (
+    ArtifactVerificationReceipt,
+    ArtifactVerificationRequest,
+    ArtifactVerifier,
     ConstraintClassifier,
     EvidenceSource,
     FalsificationCheck,
@@ -48,6 +51,7 @@ from gcl_oss.ports import (
     ProposalStatus,
     Signer,
     TelemetrySink,
+    VerifiedArtifactContent,
 )
 from gcl_oss.registry import ActionDefinition, ActionRegistry
 
@@ -55,6 +59,9 @@ __all__ = [
     "Assurance",
     "ActionDefinition",
     "ActionRegistry",
+    "ArtifactVerificationReceipt",
+    "ArtifactVerificationRequest",
+    "ArtifactVerifier",
     "Candidate",
     "Consequence",
     "Constraint",
@@ -96,5 +103,6 @@ __all__ = [
     "Signer",
     "Subject",
     "TelemetrySink",
+    "VerifiedArtifactContent",
     "cycle_key_for",
 ]

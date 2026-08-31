@@ -55,6 +55,19 @@ objects:
                 - /var/run/secrets/kubernetes.io/serviceaccount/token
                 - --ca-file
                 - /etc/evalhub-ca/service-ca.crt
+                - --verify-oci
+                - --registry-allow
+                - image-registry.openshift-image-registry.svc:5000
+                - --registry-username
+                - serviceaccount
+                - --registry-password-file
+                - /var/run/secrets/kubernetes.io/serviceaccount/token
+                - --registry-ca-file
+                - /etc/evalhub-ca/service-ca.crt
+                - --registry-max-blob-bytes
+                - "4194304"
+                - --registry-max-total-bytes
+                - "8388608"
               env:
                 - name: PYTHONDONTWRITEBYTECODE
                   value: "1"

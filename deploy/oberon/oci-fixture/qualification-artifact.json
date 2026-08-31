@@ -1,0 +1,7 @@
+{
+  "artifact_kind": "gcl-oss-evalhub-contract-qualification",
+  "description": "Non-production payload used to prove OCI manifest and descriptor verification.",
+  "expected_result": "failed-threshold",
+  "score": 0.62,
+  "threshold": 0.9
+}

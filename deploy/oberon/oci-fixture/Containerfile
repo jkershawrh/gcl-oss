@@ -1,0 +1,7 @@
+FROM scratch
+
+COPY qualification-artifact.json /qualification-artifact.json
+
+LABEL org.opencontainers.image.title="GCL OSS EvalHub qualification artifact" \
+      org.opencontainers.image.source="https://github.com/jkershawrh/gcl-oss" \
+      org.opencontainers.image.licenses="Apache-2.0"

@@ -4,8 +4,27 @@ set -eu
 CONTROL_NAMESPACE="gcl-oss-trustyai"
 TENANT_NAMESPACE="gcl-oss-evalhub"
 ROUTE_NAME="evalhub"
-OCI_DIGEST="sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-OCI_REFERENCE="quay.io/jkershawrh/gcl-oss-evalhub-fixture@$OCI_DIGEST"
+OCI_REFERENCE=${OCI_REFERENCE:?Set OCI_REFERENCE to a digest-pinned qualification artifact}
+
+case "$OCI_REFERENCE" in
+  *@sha256:*) ;;
+  *)
+    echo "OCI_REFERENCE must be pinned with a sha256 digest" >&2
+    exit 1
+    ;;
+esac
+OCI_DIGEST=${OCI_REFERENCE##*@}
+OCI_DIGEST_HEX=${OCI_DIGEST#sha256:}
+case "$OCI_DIGEST_HEX" in
+  *[!0-9a-f]* | "")
+    echo "OCI_REFERENCE has an invalid sha256 digest" >&2
+    exit 1
+    ;;
+esac
+if [ "${#OCI_DIGEST_HEX}" -ne 64 ]; then
+  echo "OCI_REFERENCE has an invalid sha256 digest length" >&2
+  exit 1
+fi
 
 command -v curl >/dev/null
 command -v jq >/dev/null

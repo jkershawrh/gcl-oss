@@ -7,6 +7,7 @@ GCL OSS is the governed decision layer between evidence and authority. It conver
 ```text
                        ┌─────────────────────────────────┐
 EvidenceSource ───────>│ validation and normalization    │
+ArtifactVerifier ─────>│ optional artifact verification  │
 PolicyCheck ──────────>│ policy checks                   │
                        │ constraint classification        │
                        │ objective interpretation         │
@@ -43,6 +44,9 @@ Contracts are the stable interoperability surface:
 - `DecisionPackage` binds policy results, constraints, objective, selected candidate, alternatives, evidence, scope, proposer, falsification, and validity window.
 - `SignedDecisionPackage` binds the package digest to an Ed25519 signing identity.
 - `ProposalReceipt` reports delivery or admission status and structurally refuses execution claims.
+- `ArtifactVerificationRequest` and `ArtifactVerificationReceipt` bind a host verifier's
+  positive result to an artifact URI, expected digest, manifest, descriptor payloads,
+  verifier identity, and verification time. Verification failures never become receipts.
 - `OutcomeRecord` represents later, independently observed results.
 
 Producer-specific details use namespaced extensions and immutable artifact references. The signed package carries a compact evidence manifest but does not mirror complete upstream response bodies.
@@ -54,16 +58,18 @@ The implemented standalone kernel owns this lifecycle:
 1. Receive evidence from one or more sources.
 2. Authenticate the source at the host boundary.
 3. Validate the envelope schema, tenant scope, subject, and freshness.
-4. Evaluate deterministic producer, schema, digest, confidence, and domain policy checks.
-5. Derive evidence-bound hard and soft constraints, using deterministic fallback at any model-assisted boundary.
-6. Frame an action-free objective over every current constraint.
-7. Ask a deterministic planner for candidates.
-8. Recompute weighted candidate costs and enforce action schema, consequence class, evidence references, objective minimization, and coverage of every hard constraint.
-9. Run the required falsification checks for the selected candidate.
-10. Record rejected alternatives.
-11. Bound package expiry by the earliest evidence expiry, then build and sign the complete DecisionPackage.
-12. Offer it to a proposal sink.
-13. Correlate later outcomes from an independent source.
+4. When required by host policy, resolve artifact bytes through an `ArtifactVerifier`
+   and bind its receipt into a copied evidence envelope.
+5. Evaluate deterministic producer, schema, digest, confidence, and domain policy checks.
+6. Derive evidence-bound hard and soft constraints, using deterministic fallback at any model-assisted boundary.
+7. Frame an action-free objective over every current constraint.
+8. Ask a deterministic planner for candidates.
+9. Recompute weighted candidate costs and enforce action schema, consequence class, evidence references, objective minimization, and coverage of every hard constraint.
+10. Run the required falsification checks for the selected candidate.
+11. Record rejected alternatives.
+12. Bound package expiry by the earliest evidence expiry, then build and sign the complete DecisionPackage.
+13. Offer it to a proposal sink.
+14. Correlate later outcomes from an independent source.
 
 The kernel works in memory with a no-op proposal sink. Network services are adapters, not preconditions.
 
@@ -74,6 +80,7 @@ Ports are small interfaces owned by GCL OSS:
 | Port | Direction | Responsibility |
 |---|---|---|
 | `EvidenceSource` | inbound | Supplies normalized evidence envelopes. |
+| `ArtifactVerifier` | inbound | Resolves artifact bytes and returns a digest- and descriptor-bound positive receipt. |
 | `PolicyCheck` | internal | Returns a deterministic allow or deny result justified by evidence. |
 | `ConstraintClassifier` | internal | Derives evidence-bound hard and soft constraints with deterministic fallback. |
 | `ObjectiveInterpreter` | internal | Frames an action-free objective over all current constraints. |
@@ -134,7 +141,7 @@ A future Kubernetes resource may configure a GCL deployment. It must not make GC
 
 ### Evidence boundary
 
-Evidence is an assertion by a producer. The assurance digest identifies the source artifact, while the cycle key also binds the canonical normalized envelope. Neither makes the producer correct or proves the artifact relationship. The host authenticates transport identity, and policy decides which producer identities, schemas, digests, confidence floors, and age limits are acceptable.
+Evidence is an assertion by a producer. The assurance digest identifies the source artifact, while the cycle key also binds the canonical normalized envelope. Neither makes the producer correct or proves the artifact relationship. The host authenticates transport identity, and policy decides which producer identities, schemas, digests, confidence floors, and age limits are acceptable. An artifact verification receipt proves that a named verifier fetched bytes matching the manifest and descriptor digests at a stated time; it does not prove that the producer's claims about those bytes are true.
 
 ### LLM honesty boundary
 
@@ -182,6 +189,6 @@ docs/                architecture, ADRs, and integration specifications
 
 The orchestration kernel, built-in in-memory adapters, no-op proposal sink, schema
 fixtures, and offline demonstrations are implemented without importing the production
-proof implementation. The first EvalHub adapter and policy pack are present; live
-environment qualification, the TrustyAI Service adapter, and the broader conformance
-kit remain roadmap work.
+proof implementation. The EvalHub adapter, policy pack, generic artifact-verification
+port, and OCI Distribution verifier are present. TrustyAI Service integration and the
+broader conformance kit remain roadmap work.

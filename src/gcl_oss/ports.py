@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Sequence
 from datetime import datetime
 from enum import Enum
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -12,6 +12,7 @@ from gcl_oss.contracts import (
     Candidate,
     Constraint,
     DecisionPackage,
+    Digest,
     EvidenceEnvelope,
     FalsificationResult,
     ObjectiveSpec,
@@ -20,6 +21,49 @@ from gcl_oss.contracts import (
     Scope,
     SignedDecisionPackage,
 )
+
+
+class ArtifactVerificationRequest(BaseModel):
+    """A host request to resolve and cryptographically verify one artifact."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    artifact_uri: str = Field(min_length=1, max_length=2048)
+    expected_digest: Digest
+
+
+class VerifiedArtifactContent(BaseModel):
+    """One descriptor payload verified while walking an artifact manifest."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    role: Literal["config", "layer", "blob"]
+    digest: Digest
+    media_type: str = Field(min_length=1, max_length=255)
+    size_bytes: int = Field(ge=0)
+    registry_digest: Digest | None = None
+
+
+class ArtifactVerificationReceipt(BaseModel):
+    """Positive verification receipt; failures are raised and never represented here."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    verifier: str = Field(min_length=1, max_length=2048)
+    artifact_uri: str = Field(min_length=1, max_length=2048)
+    artifact_digest: Digest
+    manifest_media_type: str = Field(min_length=1, max_length=255)
+    manifest_size_bytes: int = Field(ge=1)
+    registry_digest: Digest | None = None
+    verified_at: datetime
+    verified: Literal[True] = True
+    content: list[VerifiedArtifactContent] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def verified_at_is_aware(self) -> ArtifactVerificationReceipt:
+        if self.verified_at.tzinfo is None or self.verified_at.utcoffset() is None:
+            raise ValueError("verified_at must include a timezone")
+        return self
 
 
 class ProposalStatus(str, Enum):
@@ -98,6 +142,14 @@ class OutcomeRecord(BaseModel):
 @runtime_checkable
 class EvidenceSource(Protocol):
     async def receive(self) -> AsyncIterator[EvidenceEnvelope]: ...
+
+
+@runtime_checkable
+class ArtifactVerifier(Protocol):
+    async def verify(
+        self,
+        request: ArtifactVerificationRequest,
+    ) -> ArtifactVerificationReceipt: ...
 
 
 @runtime_checkable

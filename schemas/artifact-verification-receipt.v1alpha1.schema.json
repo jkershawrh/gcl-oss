@@ -1,0 +1,131 @@
+{
+  "$defs": {
+    "VerifiedArtifactContent": {
+      "additionalProperties": false,
+      "description": "One descriptor payload verified while walking an artifact manifest.",
+      "properties": {
+        "digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        },
+        "media_type": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Media Type",
+          "type": "string"
+        },
+        "registry_digest": {
+          "anyOf": [
+            {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registry Digest"
+        },
+        "role": {
+          "enum": [
+            "config",
+            "layer",
+            "blob"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "size_bytes": {
+          "minimum": 0,
+          "title": "Size Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "role",
+        "digest",
+        "media_type",
+        "size_bytes"
+      ],
+      "title": "VerifiedArtifactContent",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/artifact-verification-receipt.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Positive verification receipt; failures are raised and never represented here.",
+  "properties": {
+    "artifact_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Artifact Digest",
+      "type": "string"
+    },
+    "artifact_uri": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Artifact Uri",
+      "type": "string"
+    },
+    "content": {
+      "items": {
+        "$ref": "#/$defs/VerifiedArtifactContent"
+      },
+      "title": "Content",
+      "type": "array"
+    },
+    "manifest_media_type": {
+      "maxLength": 255,
+      "minLength": 1,
+      "title": "Manifest Media Type",
+      "type": "string"
+    },
+    "manifest_size_bytes": {
+      "minimum": 1,
+      "title": "Manifest Size Bytes",
+      "type": "integer"
+    },
+    "registry_digest": {
+      "anyOf": [
+        {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Registry Digest"
+    },
+    "verified": {
+      "const": true,
+      "default": true,
+      "title": "Verified",
+      "type": "boolean"
+    },
+    "verified_at": {
+      "format": "date-time",
+      "title": "Verified At",
+      "type": "string"
+    },
+    "verifier": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Verifier",
+      "type": "string"
+    }
+  },
+  "required": [
+    "verifier",
+    "artifact_uri",
+    "artifact_digest",
+    "manifest_media_type",
+    "manifest_size_bytes",
+    "verified_at"
+  ],
+  "title": "ArtifactVerificationReceipt",
+  "type": "object"
+}

@@ -56,8 +56,9 @@ template processing, which otherwise strips the namespace from processed objects
 The synthetic provider sleeps instead of contacting a model. The seed script reports
 one failed-threshold terminal event through EvalHub's real authenticated event API.
 This qualifies transport, tenant authorization, API normalization, OCI reference
-binding, policy, signing, and proposal delivery. It does not qualify model execution
-or registry content verification.
+binding, registry manifest and descriptor verification, policy, signing, and proposal
+delivery. It does not qualify model execution or the semantic correctness of the
+synthetic artifact.
 
 The probe is an administrator-selected provider in the isolated EvalHub instance,
 while each evaluation record is tenant scoped. At these pinned revisions, the
@@ -75,13 +76,40 @@ deploy/oberon/install-operator.sh
 deploy/oberon/apply-platform.sh
 ```
 
-Build and push the repository image to a registry the tenant can pull from. Then use
-its digest, not a mutable tag:
+Build and push the repository image plus the small qualification artifact to Oberon's
+internal registry. Use immutable digests for both. The fixture source is
+`deploy/oberon/oci-fixture`; build it as an OCI image so the qualification verifies a
+real manifest, config descriptor, and layer descriptor.
+
+For example, after logging the local container client into the registry route, push
+both images and retain the digests returned by the registry:
+
+```bash
+podman build --build-arg VCS_REF="$(git rev-parse HEAD)" \
+  -t REGISTRY/gcl-oss-evalhub/gcl-oss:SOURCE_REVISION .
+podman push --digestfile /tmp/gcl-image.digest \
+  REGISTRY/gcl-oss-evalhub/gcl-oss:SOURCE_REVISION
+
+podman build --format oci \
+  -f deploy/oberon/oci-fixture/Containerfile \
+  -t REGISTRY/gcl-oss-evalhub/gcl-oss-evalhub-fixture:SOURCE_REVISION \
+  deploy/oberon/oci-fixture
+podman push --digestfile /tmp/gcl-fixture.digest \
+  REGISTRY/gcl-oss-evalhub/gcl-oss-evalhub-fixture:SOURCE_REVISION
+```
+
+Then run with internal service references, not mutable tags:
 
 ```bash
 GCL_IMAGE='image-registry.openshift-image-registry.svc:5000/gcl-oss-evalhub/gcl-oss@sha256:...' \
+OCI_REFERENCE='image-registry.openshift-image-registry.svc:5000/gcl-oss-evalhub/gcl-oss-evalhub-fixture@sha256:...' \
   deploy/oberon/run-qualification.sh
 ```
+
+The qualification workload reads its projected service-account token from a file and
+uses it for pull-only OCI Bearer authentication. It trusts the OpenShift service CA,
+exactly allowlists the internal registry service, and enforces small manifest, blob,
+and total response limits.
 
 The qualification also proves that the same service account receives HTTP 403 when
 it substitutes the control-plane namespace in `X-Tenant`. It retains the terminal

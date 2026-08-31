@@ -35,7 +35,9 @@ The tagged `0.2.0a1` standalone alpha contains the vendor-neutral kernel. The
 - a coherent `DecisionPackage` that cryptographically binds policy results, constraints, objective, candidate cost values, rejected alternatives, and falsification results;
 - Ed25519 signatures with key identity, digest binding, and expiry verification;
 - proposal receipts that cannot claim execution verification;
-- structural Python protocols for evidence, policy, constraint classification, objective interpretation, planning, falsification, proposals, proof, outcomes, signing, and telemetry;
+- structural Python protocols for evidence, artifact verification, policy, constraint
+  classification, objective interpretation, planning, falsification, proposals, proof,
+  outcomes, signing, and telemetry;
 - a deterministic orchestration kernel with scope, freshness, policy, constraint, objective, registry, falsification, signing, and proposal gates;
 - process-local replay handling that prevents duplicate delivery from concurrent retries on one async event loop;
 - explicit `delivery_unknown` results that stop automatic redelivery when a consumer times out or returns a mismatched receipt;
@@ -46,15 +48,15 @@ The tagged `0.2.0a1` standalone alpha contains the vendor-neutral kernel. The
 - an EvalHub API v1 terminal-job normalizer pinned to an upstream contract revision;
 - an authenticated, tenant-scoped, TLS-validating EvalHub job reader with no vendor SDK dependency;
 - a live EvalHub CLI path for projected service-account tokens and private cluster CAs;
-- deterministic OCI provenance checks and an EvalHub promotion policy pack;
+- a generic artifact-verification port, a bounded OCI Distribution verifier, and
+  receipt-aware EvalHub policy;
 - a packaged failed-safety EvalHub fixture and signed end-to-end demonstration;
 - an architecture and integration plan covering several ecosystems.
 
 It is an alpha reference kernel, not a production release. The EvalHub adapter has
 local API and isolated OpenShift contract qualification; its Oberon assets and
 [qualification record](docs/qualification/oberon-evalhub-2026-08-31.md) are committed.
-TrustyAI Service adapters, registry-content verification, and durable distributed
-idempotency remain roadmap work.
+TrustyAI Service adapters and durable distributed idempotency remain roadmap work.
 
 ## Install for development
 
@@ -80,9 +82,10 @@ Run the EvalHub contract demonstration:
 gcl-oss evalhub-demo
 ```
 
-This consumes a packaged API-v1-shaped terminal job response, verifies its digest-pinned
-OCI provenance, derives a promotion-review constraint, and produces the same
-proposal-only signed chain. See the [EvalHub integration](docs/evalhub-integration.md).
+This consumes a packaged API-v1-shaped terminal job response, validates its
+digest-pinned OCI provenance declarations without registry access, derives a
+promotion-review constraint, and produces the same proposal-only signed chain. See
+the [EvalHub integration](docs/evalhub-integration.md).
 
 Fetch one terminal job from a live EvalHub deployment:
 
@@ -99,6 +102,11 @@ gcl-oss evalhub-live \
 
 The live command uses the current clock and therefore rejects stale evidence. It still
 uses the no-op proposal sink and cannot claim execution.
+
+Add `--verify-oci` and an exact `--registry-allow HOST[:PORT]` to fetch and verify the
+manifest plus every descriptor before strict policy evaluation. Registry credentials
+come from `--registry-auth-file` or the file-based username/password options; secret
+values are never accepted directly on the command line.
 
 Regenerate the committed contract schemas:
 

@@ -6,6 +6,7 @@ CONTROL_NAMESPACE="gcl-oss-trustyai"
 QUALIFICATION_JOB="gcl-oss-evalhub-qualification"
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 GCL_IMAGE=${GCL_IMAGE:?Set GCL_IMAGE to a digest-pinned image reference}
+OCI_REFERENCE=${OCI_REFERENCE:?Set OCI_REFERENCE to a digest-pinned qualification artifact}
 TEMP_RESPONSE=$(mktemp /tmp/gcl-oss-wrong-tenant.XXXXXX)
 trap 'rm -f "$TEMP_RESPONSE"' EXIT HUP INT TERM
 
@@ -13,7 +14,7 @@ command -v curl >/dev/null
 command -v jq >/dev/null
 command -v oc >/dev/null
 
-JOB_ID=$($SCRIPT_DIR/seed-qualification.sh)
+JOB_ID=$(OCI_REFERENCE="$OCI_REFERENCE" "$SCRIPT_DIR/seed-qualification.sh")
 BASE_URL="https://$(oc get route evalhub -n "$CONTROL_NAMESPACE" -o jsonpath='{.spec.host}')"
 SERVICE_ACCOUNT_TOKEN=$(oc create token gcl-oss-qualifier -n "$TENANT_NAMESPACE")
 
