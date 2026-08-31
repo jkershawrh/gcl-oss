@@ -5,6 +5,9 @@ proofs are demonstrable.
 It is not an adoption claim or a request for TrustyAI to transfer execution authority
 to GCL.
 
+Use the [TrustyAI ecosystem architecture](diagrams/ecosystem-architecture.md) and the
+[architecture and event workflow set](diagrams/README.md) during the design review.
+
 ## Positioning
 
 GCL OSS consumes trustworthy evaluation or monitoring results and turns them into a

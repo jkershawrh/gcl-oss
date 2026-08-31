@@ -5,6 +5,9 @@ evidence. TrustyAI owns the data, metric implementation, and verdict. GCL valida
 that response against the pinned source contract, binds it to the request and model,
 and derives a proposal-only runtime-review constraint when the metric fails.
 
+See the [TrustyAI runtime event workflow](diagrams/trustyai-runtime-event-workflow.md)
+for the authenticated compute, normalization, policy, signing, and proposal sequence.
+
 The implementation is pinned to TrustyAI Service source revision
 `f78ca0e91cc24745fdaacb8f8ae893b059c03a0c`. Each evidence envelope links its exact
 endpoint implementation at that revision rather than claiming compatibility with a

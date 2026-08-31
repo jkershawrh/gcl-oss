@@ -4,6 +4,10 @@ The first TrustyAI-family integration converts a terminal EvalHub job resource i
 portable GCL evidence, applies a separately versioned promotion policy, and produces a
 signed proposal without obtaining deployment authority.
 
+See the [EvalHub pre-deployment event workflow](diagrams/evalhub-event-workflow.md)
+for the complete authenticated read, optional OCI verification, policy, signing, and
+proposal sequence.
+
 ## Supported contract
 
 The adapter targets EvalHub API v1 endpoint

@@ -1,5 +1,9 @@
 # Architecture
 
+See the [visual architecture and event workflow set](diagrams/README.md) for the
+TrustyAI ecosystem map, pre-deployment and runtime sequences, closed-loop authority
+boundary, Oberon deployment, and failure paths.
+
 ## Product boundary
 
 GCL OSS is the governed decision layer between evidence and authority. It converts scoped evidence into a reviewable proposal. It is deliberately incapable of proving execution from a proposal response.

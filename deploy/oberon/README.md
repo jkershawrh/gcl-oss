@@ -3,6 +3,8 @@
 This deployment is an isolated contract qualification for GCL OSS, EvalHub, and
 TrustyAI Service. It does not modify or reference the `governed-cognitive-loop`
 namespace.
+See the [Oberon deployment and trust-boundary diagram](../../docs/diagrams/oberon-deployment.md)
+for the namespace, authentication, service, and no-op authority boundaries.
 The initial API-contract run and the later registry-content run are recorded in the
 [contract qualification report](../../docs/qualification/oberon-evalhub-2026-08-31.md)
 and [OCI-content qualification report](../../docs/qualification/oberon-evalhub-oci-2026-08-31.md).

@@ -176,6 +176,7 @@ See [integration points](docs/integrations.md) for the boundary of each adapter.
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Architecture and event workflow diagrams](docs/diagrams/README.md)
 - [Integration points](docs/integrations.md)
 - [Standalone demo](docs/standalone-demo.md)
 - [EvalHub integration](docs/evalhub-integration.md)
