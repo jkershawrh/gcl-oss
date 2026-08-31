@@ -41,7 +41,16 @@ The integration is intentionally split in two. The evidence adapter only normali
 
 EvalHub is the preferred first pre-deployment integration because it already presents a unified API across evaluation frameworks and collections.
 
-The adapter consumes terminal job state, provider, benchmark or collection identity, compliance status, scores, MLflow or OCI artifact references, tenant, and result digest. Non-terminal jobs are not evidence of success or failure.
+The implemented API v1 adapter consumes terminal job state, provider, benchmark or
+collection identity, compliance status, scores, OCI artifact references, tenant, and a
+canonical result digest. It is pinned to an explicit upstream OpenAPI revision.
+Non-terminal jobs are rejected rather than treated as success or failure. Failed job
+execution is kept distinct from a failed model test.
+
+Transport and normalization live in `gcl_oss.adapters.evalhub`. Evidence admission and
+promotion constraints live in `gcl_oss.policy_packs.evalhub`. The default policy
+requires complete digest-pinned OCI provenance for evaluation results. See the
+[EvalHub integration specification](evalhub-integration.md).
 
 The first end-to-end demo should be:
 

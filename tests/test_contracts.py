@@ -57,7 +57,7 @@ def evidence() -> EvidenceEnvelope:
             status=MeasurementStatus.FAILED,
         ),
         assurance=Assurance(confidence=0.98, digest="sha256:" + "a" * 64),
-        extensions={"evalhub.io/job-id": "42"},
+        extensions={"io.github.eval-hub/job-id": "42"},
     )
 
 

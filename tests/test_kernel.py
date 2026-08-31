@@ -78,7 +78,7 @@ def evidence(
             confidence=confidence,
             digest="sha256:" + digest_character * 64,
         ),
-        extensions={"evalhub.io/job-id": "42"},
+        extensions={"io.github.eval-hub/job-id": "42"},
     )
 
 

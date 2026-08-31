@@ -14,7 +14,9 @@ python -m ruff check src tests
 
 ## Workflow
 
-1. Open an issue for an integration, contract, or architectural change.
+1. Open an issue for an integration, contract, or architectural change. External
+   contributors submit pull requests; the solo maintainer may commit validated work
+   directly to `main` until independent reviewers participate.
 2. Add contract tests before changing cross-system behavior.
 3. Keep vendor SDKs and deployment assumptions outside the core.
 4. Document identity, scope, freshness, idempotency, provenance, and failure behavior.

@@ -37,4 +37,4 @@ def test_evalhub_style_golden_evidence_validates() -> None:
         schema_documents()["evidence-envelope.v1alpha1.schema.json"]
     ).validate(payload)
     item = EvidenceEnvelope.model_validate(payload)
-    assert item.extensions["evalhub.io/job-id"] == "42"
+    assert item.extensions["io.github.eval-hub/job-id"] == "42"

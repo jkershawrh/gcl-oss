@@ -33,7 +33,7 @@
     "artifact_uri": "oci://registry.example/evalhub/results/42@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
   },
   "extensions": {
-    "evalhub.io/job-id": "42",
-    "evalhub.io/provider": "garak"
+    "io.github.eval-hub/job-id": "42",
+    "io.github.eval-hub/provider": "garak"
   }
 }

@@ -24,7 +24,8 @@ GCL OSS owns the decision record. It does not own source measurements, external 
 
 ## What exists today
 
-The `0.2.0a1` standalone alpha contains:
+The tagged `0.2.0a1` standalone alpha contains the vendor-neutral kernel. The
+`0.3.0a1` development line adds the first external evidence integration:
 
 - a versioned `EvidenceEnvelope` with producer, subject, tenant scope, freshness, confidence, digest, and namespaced extensions;
 - a signed evidence manifest carrying producer, schema, artifact digest and URI, and canonical envelope digest without copying full upstream payloads;
@@ -42,9 +43,15 @@ The `0.2.0a1` standalone alpha contains:
 - in-memory evidence and proof adapters, a demo-only signer, and a no-op proposal sink;
 - committed Draft 2020-12 JSON Schemas and a golden EvalHub-style evidence fixture;
 - an offline demonstration that produces a complete signed proposal without a cluster or external service;
+- an EvalHub API v1 terminal-job normalizer pinned to an upstream contract revision;
+- an authenticated, tenant-scoped, TLS-validating EvalHub job reader with no vendor SDK dependency;
+- deterministic OCI provenance checks and an EvalHub promotion policy pack;
+- a packaged failed-safety EvalHub fixture and signed end-to-end demonstration;
 - an architecture and integration plan covering several ecosystems.
 
-It is an alpha reference kernel, not a production release. External adapters and durable distributed idempotency are roadmap work.
+It is an alpha reference kernel, not a production release. The EvalHub adapter still
+requires live local and OpenShift qualification. TrustyAI Service adapters and durable
+distributed idempotency remain roadmap work.
 
 ## Install for development
 
@@ -63,6 +70,16 @@ gcl-oss demo
 ```
 
 The demo converts a failed safety evaluation into an evidence-bound hard constraint and deterministic objective, generates `request_review` and `hold` alternatives, selects the less disruptive review proposal, runs its required freshness falsification check, signs the complete reasoning chain with an ephemeral Ed25519 key, and delivers it once to a no-op sink. The receipt always reports `execution_verified=false`.
+
+Run the EvalHub contract demonstration:
+
+```bash
+gcl-oss evalhub-demo
+```
+
+This consumes a packaged API-v1-shaped terminal job response, verifies its digest-pinned
+OCI provenance, derives a promotion-review constraint, and produces the same
+proposal-only signed chain. See the [EvalHub integration](docs/evalhub-integration.md).
 
 Regenerate the committed contract schemas:
 
@@ -104,6 +121,8 @@ See [integration points](docs/integrations.md) for the boundary of each adapter.
 - [Architecture](docs/architecture.md)
 - [Integration points](docs/integrations.md)
 - [Standalone demo](docs/standalone-demo.md)
+- [EvalHub integration](docs/evalhub-integration.md)
+- [TrustyAI and EvalHub engagement brief](docs/trustyai-engagement.md)
 - [ADR 0001: proposal-only kernel](docs/adr/0001-proposal-only-kernel.md)
 - [Roadmap](ROADMAP.md)
 - [Governance](GOVERNANCE.md)

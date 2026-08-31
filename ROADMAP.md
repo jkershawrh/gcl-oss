@@ -13,7 +13,7 @@ This roadmap describes dependency order, not release dates.
 
 Exit criteria: a third party can implement an adapter without importing internal modules.
 
-## 0.2 alpha: standalone kernel (complete on merge)
+## 0.2 alpha: standalone kernel (released)
 
 - Deterministic orchestration lifecycle.
 - In-memory evidence source and proof recorder.
@@ -28,10 +28,15 @@ Deferred to 0.4: generic webhook delivery, which requires an explicit authentica
 
 Exit criteria: a complete signed cycle runs locally using only built-in components.
 
-## 0.3 alpha: TrustyAI proof
+Released as `v0.2.0a1` with wheel and source artifacts.
 
+## 0.3 alpha: TrustyAI proof (in progress)
+
+- EvalHub terminal-job and collection-result adapter (implemented against a pinned API
+  v1 revision and qualified once against its local server; repeatable harness and
+  OpenShift qualification remain).
+- EvalHub promotion policy pack and signed offline fixture demonstration (implemented).
 - TrustyAI Service evidence adapter.
-- EvalHub terminal-job and collection-result adapter.
 - Reference drift, fairness, safety, and promotion policy packs.
 - Reproducible local and OpenShift demonstrations.
 - Joint contract fixtures suitable for upstream review.

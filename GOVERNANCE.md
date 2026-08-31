@@ -12,7 +12,14 @@ The repository owner is the initial maintainer. Maintainer membership will expan
 
 ## Decisions
 
-Routine changes use GitHub issues and pull requests. Changes to stable contracts, signing, tenancy, authority boundaries, deterministic action ownership, extension interfaces, licensing, or governance require a public design issue or ADR.
+While the project has one active maintainer, validated routine changes may be committed
+directly to `main` after local checks and required hosted CI. Personal pull requests are
+not used as a substitute for independent review. Once another active maintainer or an
+upstream/downstream reviewer participates, reviewable changes use GitHub pull requests.
+
+Changes to stable contracts, signing, tenancy, authority boundaries, deterministic
+action ownership, extension interfaces, licensing, or governance require a public
+design issue or ADR regardless of the delivery workflow.
 
 Maintainers document the decision and meaningful dissent. When consensus cannot be reached, maintainers record the final rationale publicly.
 

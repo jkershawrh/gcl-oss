@@ -255,6 +255,14 @@ class RiskReductionObjectiveInterpreter:
 
 
 class ReviewFailedMeasurementsPlanner:
+    def __init__(
+        self,
+        constraint_names: Sequence[str] = (REVIEW_REQUIRED_CONSTRAINT,),
+    ) -> None:
+        if not constraint_names:
+            raise ValueError("at least one governed constraint name is required")
+        self._constraint_names = frozenset(constraint_names)
+
     @property
     def deterministic(self) -> bool:
         return True
@@ -270,7 +278,7 @@ class ReviewFailedMeasurementsPlanner:
         governed_refs = {
             ref
             for constraint in constraints
-            if constraint.name == REVIEW_REQUIRED_CONSTRAINT
+            if constraint.name in self._constraint_names
             for ref in constraint.evidence_refs
         }
         concerning = [

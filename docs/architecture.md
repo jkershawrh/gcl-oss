@@ -168,8 +168,10 @@ Stable versions are never changed in place.
 
 ```text
 src/gcl_oss/
+  adapters/          source-specific transport and evidence normalization
   contracts.py       portable versioned models and signatures
   ports.py           structural extension interfaces
+  policy_packs/      separately versioned deterministic evidence policies
   registry.py        namespaced action definitions and parameter schemas
   kernel.py          deterministic proposal-only orchestration
   builtin.py         offline reference components
@@ -178,4 +180,8 @@ tests/               contract and boundary tests
 docs/                architecture, ADRs, and integration specifications
 ```
 
-The orchestration kernel, built-in in-memory adapters, no-op proposal sink, schema fixtures, and offline demonstration are implemented without importing the production proof implementation. External adapters and the conformance kit remain roadmap work.
+The orchestration kernel, built-in in-memory adapters, no-op proposal sink, schema
+fixtures, and offline demonstrations are implemented without importing the production
+proof implementation. The first EvalHub adapter and policy pack are present; live
+environment qualification, the TrustyAI Service adapter, and the broader conformance
+kit remain roadmap work.
