@@ -151,6 +151,7 @@ See [integration points](docs/integrations.md) for the boundary of each adapter.
 - [EvalHub integration](docs/evalhub-integration.md)
 - [Oberon EvalHub qualification](deploy/oberon/README.md)
 - [Oberon qualification record](docs/qualification/oberon-evalhub-2026-08-31.md)
+- [Oberon OCI-content qualification](docs/qualification/oberon-evalhub-oci-2026-08-31.md)
 - [TrustyAI and EvalHub engagement brief](docs/trustyai-engagement.md)
 - [ADR 0001: proposal-only kernel](docs/adr/0001-proposal-only-kernel.md)
 - [Roadmap](ROADMAP.md)

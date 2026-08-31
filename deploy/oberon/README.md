@@ -2,8 +2,9 @@
 
 This deployment is an isolated contract qualification for GCL OSS and EvalHub. It
 does not modify or reference the `governed-cognitive-loop` namespace.
-The passing 2026-08-31 run is recorded in the
-[qualification report](../../docs/qualification/oberon-evalhub-2026-08-31.md).
+The initial API-contract run and the later registry-content run are recorded in the
+[contract qualification report](../../docs/qualification/oberon-evalhub-2026-08-31.md)
+and [OCI-content qualification report](../../docs/qualification/oberon-evalhub-oci-2026-08-31.md).
 
 ## Pinned inputs
 

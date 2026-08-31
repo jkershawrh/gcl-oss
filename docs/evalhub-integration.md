@@ -204,22 +204,26 @@ No failure path calls a proposal consumer with an unsigned or incomplete package
 
 ## Qualification status
 
-On 2026-08-31, the adapter passed both a local API-shape exercise and an isolated
-OpenShift contract qualification on Oberon. The cluster run used an authenticated
-projected service-account token, service TLS, EvalHub's `X-Tenant` boundary, the real
-terminal-job and event APIs, and a digest-pinned GCL image. The own-tenant read
-succeeded, the same identity received HTTP 403 for a different tenant, and the signed
-proposal path completed once with `execution_verified=false`.
+On 2026-08-31, the adapter passed a local API-shape exercise, an isolated OpenShift
+contract qualification, and a second OCI-content qualification on Oberon. The latter
+used projected service-account tokens, service TLS, EvalHub's `X-Tenant` boundary, the
+real terminal-job and event APIs, and digest-pinned GCL and fixture images. It fetched
+and verified the OCI manifest, config, and layer before strict policy admission. The
+own-tenant read succeeded, the same identity received HTTP 403 for a different tenant,
+and the signed proposal path completed once with `execution_verified=false`.
 
 The detailed [qualification record](qualification/oberon-evalhub-2026-08-31.md)
 contains the exact image and source pins, observed decision-package digests,
 compatibility findings, and exclusions. The repeatable cluster harness is documented
 in [`deploy/oberon`](../deploy/oberon/README.md).
 
+The separate [OCI-content qualification record](qualification/oberon-evalhub-oci-2026-08-31.md)
+captures the verifier receipt, descriptor digests, stricter policy result, and updated
+immutable pins.
+
 ## Remaining qualification
 
 Before the EvalHub milestone is called complete:
 
-1. qualify registry-content verification against the isolated Oberon deployment;
-2. add an upstream-owned fixture or conformance vector;
-3. confirm the mapping with EvalHub maintainers.
+1. add an upstream-owned fixture or conformance vector;
+2. confirm the mapping with EvalHub maintainers.

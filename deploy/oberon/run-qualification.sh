@@ -49,6 +49,19 @@ printf '%s\n' "$QUALIFICATION_OUTPUT" | jq -e '
   and .normalized_evidence.scope.tenant == "gcl-oss-evalhub"
   and .normalized_evidence.measurement.status == "failed"
   and .normalized_evidence.extensions["io.github.eval-hub/provenance-mode"] == "oci-manifest"
+  and (.normalized_evidence.extensions["io.github.eval-hub/oci-verifications"] | length) == 1
+  and .normalized_evidence.extensions["io.github.eval-hub/oci-verifications"][0].receipt.verified == true
+  and (
+    .normalized_evidence.extensions["io.github.eval-hub/oci-verifications"][0].receipt.content
+    | map(.role)
+    | sort
+  ) == ["config", "layer"]
+  and any(
+    .signed_package.package.policy_results[];
+    .check_id == "evalhub-evidence-v1alpha1"
+    and .allowed == true
+    and (.reason | contains("registry-verified OCI content"))
+  )
   and .proposal_receipt.execution_verified == false
   and .proposal_delivery_count == 1
 ' >/dev/null

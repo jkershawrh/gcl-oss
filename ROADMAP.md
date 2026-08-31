@@ -37,7 +37,7 @@ Released as `v0.2.0a1` with wheel and source artifacts.
   OpenShift deployment on Oberon).
 - EvalHub promotion policy pack and signed offline fixture demonstration (implemented).
 - Generic artifact-verification port and OCI Distribution manifest/descriptor verifier
-  with receipt-aware EvalHub policy (implemented; Oberon qualification pending).
+  with receipt-aware EvalHub policy (implemented and qualified on Oberon).
 - TrustyAI Service evidence adapter.
 - Reference drift, fairness, safety, and promotion policy packs.
 - Reproducible local and OpenShift demonstrations (EvalHub path complete; TrustyAI
