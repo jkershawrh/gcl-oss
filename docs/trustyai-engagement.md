@@ -72,7 +72,9 @@ Keep the first session to twenty minutes:
 - the EvalHub adapter and pinned API revision;
 - tests for terminal state, tenant separation, provenance, stale data, and no-actuation;
 - the packaged failed-safety fixture;
-- the signed demo output;
+- the signed demo output and the
+  [Oberon qualification record](qualification/oberon-evalhub-2026-08-31.md), including
+  the projected-token success, cross-tenant HTTP 403, and upstream compatibility gaps;
 - one page showing the proposed TrustyAI Service drift/fairness mapping as the next
   integration, contingent on feedback.
 

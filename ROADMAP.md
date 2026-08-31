@@ -33,12 +33,13 @@ Released as `v0.2.0a1` with wheel and source artifacts.
 ## 0.3 alpha: TrustyAI proof (in progress)
 
 - EvalHub terminal-job and collection-result adapter (implemented against a pinned API
-  v1 revision and qualified once against its local server; repeatable harness and
-  OpenShift qualification remain).
+  v1 revision and qualified against its local server plus an authenticated, isolated
+  OpenShift deployment on Oberon).
 - EvalHub promotion policy pack and signed offline fixture demonstration (implemented).
 - TrustyAI Service evidence adapter.
 - Reference drift, fairness, safety, and promotion policy packs.
-- Reproducible local and OpenShift demonstrations.
+- Reproducible local and OpenShift demonstrations (EvalHub path complete; TrustyAI
+  Service path remains).
 - Joint contract fixtures suitable for upstream review.
 
 Exit criteria: a TrustyAI or EvalHub result produces a signed proposal without giving GCL actuation authority.
