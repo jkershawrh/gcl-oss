@@ -1,0 +1,82 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: gcl-oss-evalhub-qualification
+  namespace: gcl-oss-evalhub
+parameters:
+  - name: GCL_IMAGE
+    description: Digest-pinned GCL OSS image available to the tenant namespace.
+    required: true
+  - name: EVALHUB_JOB_ID
+    description: Terminal EvalHub job to normalize.
+    required: true
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: gcl-oss-evalhub-qualification
+      namespace: gcl-oss-evalhub
+      labels:
+        app.kubernetes.io/name: gcl-oss
+        app.kubernetes.io/component: evalhub-qualification
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: gcl-oss
+            app.kubernetes.io/component: evalhub-qualification
+        spec:
+          serviceAccountName: gcl-oss-qualifier
+          automountServiceAccountToken: true
+          restartPolicy: Never
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: gcl-oss
+              image: ${GCL_IMAGE}
+              imagePullPolicy: IfNotPresent
+              args:
+                - evalhub-live
+                - --base-url
+                - https://evalhub.gcl-oss-trustyai.svc:8443
+                - --job-id
+                - ${EVALHUB_JOB_ID}
+                - --tenant
+                - gcl-oss-evalhub
+                - --namespace
+                - gcl-oss-evalhub
+                - --environment
+                - oberon
+                - --model-version
+                - qualification-v1
+                - --token-file
+                - /var/run/secrets/kubernetes.io/serviceaccount/token
+                - --ca-file
+                - /etc/evalhub-ca/service-ca.crt
+              env:
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+              volumeMounts:
+                - name: evalhub-service-ca
+                  mountPath: /etc/evalhub-ca
+                  readOnly: true
+          volumes:
+            - name: evalhub-service-ca
+              configMap:
+                name: evalhub-service-ca

@@ -130,6 +130,25 @@ The client authenticates the caller to EvalHub and validates the server transpor
 host remains responsible for workload identity, token acquisition and rotation, RBAC,
 secret redaction, network policy, and retention.
 
+The packaged CLI exposes the same boundary without accepting a token on the command
+line:
+
+```bash
+gcl-oss evalhub-live \
+  --base-url https://evalhub.example \
+  --job-id JOB_ID \
+  --tenant team-a \
+  --namespace team-a \
+  --environment staging \
+  --model-version candidate-v7 \
+  --token-file /var/run/secrets/kubernetes.io/serviceaccount/token \
+  --ca-file /etc/evalhub-ca/service-ca.crt
+```
+
+`--token-file` is deliberately preferred to an environment variable or command-line
+token. The live command fetches once, uses the current UTC clock for freshness checks,
+and sends the resulting package only to the no-op proposal sink.
+
 ## Failure behavior
 
 The integration fails closed on:
@@ -156,15 +175,16 @@ reported, and `EvalHubHTTPClient` fetched the resulting
 `EvaluationJobResource`. The live response normalized into failed compliance evidence
 and completed the signed proposal path with `execution_verified=false`.
 
-This qualifies the current local API shape; it is not OpenShift, OAuth, registry-content,
-or long-running compatibility qualification.
+This qualifies the current local API shape; it is not by itself OpenShift,
+registry-content, or long-running compatibility qualification. The isolated OpenShift
+contract harness is documented in
+[`deploy/oberon`](../deploy/oberon/README.md).
 
 ## Remaining qualification
 
 Before the EvalHub milestone is called complete:
 
-1. turn the local qualification into a repeatable integration-test harness;
-2. run it with OpenShift OAuth and `X-Tenant` RBAC;
-3. verify OCI content against the registry rather than only verifying reference shape;
-4. add an upstream-owned fixture or conformance vector;
-5. confirm the mapping with EvalHub maintainers.
+1. complete and record the Oberon OAuth, projected-token, and `X-Tenant` RBAC run;
+2. verify OCI content against the registry rather than only verifying reference shape;
+3. add an upstream-owned fixture or conformance vector;
+4. confirm the mapping with EvalHub maintainers.

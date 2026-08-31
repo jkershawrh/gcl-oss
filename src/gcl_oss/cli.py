@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from importlib import resources
 from pathlib import Path
 
-from gcl_oss.adapters.evalhub import normalize_evalhub_job
+from gcl_oss.adapters.evalhub import EvalHubHTTPClient, normalize_evalhub_job
 from gcl_oss.builtin import (
     EvidenceFreshnessCheck,
     FailedMeasurementConstraintClassifier,
@@ -144,9 +144,29 @@ async def _run_evalhub_demo(
     # The command is a reproducible offline replay. Live hosts use their current
     # clock and reject evidence outside the configured validity window.
     now = item.metadata.observed_at + timedelta(seconds=1)
+    return await _run_evalhub_cycle(
+        item,
+        source_base_url=source_base_url,
+        now=now,
+        key_id="evalhub-demo-ephemeral",
+        proposer=ProposerIdentity(
+            id="gcl-oss-evalhub-demo",
+            workload_identity="spiffe://example.org/ns/local/sa/gcl-evalhub-demo",
+            trust_domain="example.org",
+        ),
+    )
+
+
+async def _run_evalhub_cycle(
+    item: EvidenceEnvelope,
+    *,
+    source_base_url: str,
+    now: datetime,
+    key_id: str,
+    proposer: ProposerIdentity,
+) -> dict:
     sink = NoOpProposalSink()
     proof = MemoryProofRecorder()
-    key_id = "evalhub-demo-ephemeral"
     signer = StaticSigner(key_id, os.urandom(32))
     kernel = GovernanceKernel(
         planner=ReviewFailedMeasurementsPlanner(
@@ -158,11 +178,7 @@ async def _run_evalhub_demo(
         falsification_checks=[EvidenceFreshnessCheck()],
         signer=signer,
         key_id=key_id,
-        proposer=ProposerIdentity(
-            id="gcl-oss-evalhub-demo",
-            workload_identity="spiffe://example.org/ns/local/sa/gcl-evalhub-demo",
-            trust_domain="example.org",
-        ),
+        proposer=proposer,
         proposal_sink=sink,
         policy_checks=[
             EvalHubEvidencePolicy(expected_producer_prefix=source_base_url)
@@ -176,6 +192,57 @@ async def _run_evalhub_demo(
     payload["proof_entry_count"] = len(proof.entries)
     payload["proposal_delivery_count"] = len(sink.packages)
     return payload
+
+
+def _read_bearer_token(path: Path | None) -> str | None:
+    if path is None:
+        return None
+    if path.stat().st_size > 64 * 1024:
+        raise ValueError("bearer token file exceeds 64 KiB")
+    token = path.read_text(encoding="utf-8").strip()
+    if not token:
+        raise ValueError("bearer token file is empty")
+    if any(character in token for character in "\r\n"):
+        raise ValueError("bearer token file contains multiple lines")
+    return token
+
+
+async def _run_evalhub_live(args: argparse.Namespace) -> dict:
+    scope = Scope(
+        tenant=args.tenant,
+        namespace=args.namespace,
+        environment=args.environment,
+    )
+    client = EvalHubHTTPClient(
+        args.base_url,
+        args.tenant,
+        bearer_token=_read_bearer_token(args.token_file),
+        timeout=args.timeout,
+        ca_file=args.ca_file,
+        allow_insecure_http=args.allow_insecure_http,
+    )
+    raw_job = await asyncio.to_thread(client.get_job, args.job_id)
+    item = normalize_evalhub_job(
+        raw_job,
+        source_url=client.job_url(args.job_id),
+        scope=scope,
+        validity=timedelta(minutes=args.validity_minutes),
+        model_version=args.model_version,
+    )
+    workload_identity = args.workload_identity or (
+        f"spiffe://{args.trust_domain}/ns/{scope.namespace}/sa/gcl-oss-qualifier"
+    )
+    return await _run_evalhub_cycle(
+        item,
+        source_base_url=client.base_url,
+        now=datetime.now(timezone.utc),
+        key_id="evalhub-live-ephemeral",
+        proposer=ProposerIdentity(
+            id="gcl-oss-evalhub-live",
+            workload_identity=workload_identity,
+            trust_domain=args.trust_domain,
+        ),
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -202,6 +269,23 @@ def _parser() -> argparse.ArgumentParser:
     evalhub_demo.add_argument("--namespace", default="models")
     evalhub_demo.add_argument("--environment", default="staging")
     evalhub_demo.add_argument("--model-version", default="v7")
+    evalhub_live = subcommands.add_parser(
+        "evalhub-live",
+        help="fetch one terminal EvalHub job and run a signed proposal-only cycle",
+    )
+    evalhub_live.add_argument("--base-url", required=True)
+    evalhub_live.add_argument("--job-id", required=True)
+    evalhub_live.add_argument("--tenant", required=True)
+    evalhub_live.add_argument("--namespace", required=True)
+    evalhub_live.add_argument("--environment", required=True)
+    evalhub_live.add_argument("--model-version")
+    evalhub_live.add_argument("--token-file", type=Path)
+    evalhub_live.add_argument("--ca-file", type=Path)
+    evalhub_live.add_argument("--timeout", type=float, default=10.0)
+    evalhub_live.add_argument("--validity-minutes", type=int, default=15)
+    evalhub_live.add_argument("--allow-insecure-http", action="store_true")
+    evalhub_live.add_argument("--trust-domain", default="cluster.local")
+    evalhub_live.add_argument("--workload-identity")
     schemas = subcommands.add_parser("schemas", help="write the versioned JSON Schemas")
     schemas.add_argument("--output", type=Path, default=Path("schemas"))
     return parser
@@ -231,6 +315,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 model_version=args.model_version,
             )
         )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    if args.command == "evalhub-live":
+        payload = asyncio.run(_run_evalhub_live(args))
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
     raise AssertionError(f"unhandled command: {args.command}")

@@ -45,12 +45,14 @@ The tagged `0.2.0a1` standalone alpha contains the vendor-neutral kernel. The
 - an offline demonstration that produces a complete signed proposal without a cluster or external service;
 - an EvalHub API v1 terminal-job normalizer pinned to an upstream contract revision;
 - an authenticated, tenant-scoped, TLS-validating EvalHub job reader with no vendor SDK dependency;
+- a live EvalHub CLI path for projected service-account tokens and private cluster CAs;
 - deterministic OCI provenance checks and an EvalHub promotion policy pack;
 - a packaged failed-safety EvalHub fixture and signed end-to-end demonstration;
 - an architecture and integration plan covering several ecosystems.
 
-It is an alpha reference kernel, not a production release. The EvalHub adapter still
-requires live local and OpenShift qualification. TrustyAI Service adapters and durable
+It is an alpha reference kernel, not a production release. The EvalHub adapter has
+local API qualification; its isolated OpenShift qualification assets live under
+`deploy/oberon`. TrustyAI Service adapters, registry-content verification, and durable
 distributed idempotency remain roadmap work.
 
 ## Install for development
@@ -80,6 +82,22 @@ gcl-oss evalhub-demo
 This consumes a packaged API-v1-shaped terminal job response, verifies its digest-pinned
 OCI provenance, derives a promotion-review constraint, and produces the same
 proposal-only signed chain. See the [EvalHub integration](docs/evalhub-integration.md).
+
+Fetch one terminal job from a live EvalHub deployment:
+
+```bash
+gcl-oss evalhub-live \
+  --base-url https://evalhub.example \
+  --job-id JOB_ID \
+  --tenant team-a \
+  --namespace team-a \
+  --environment staging \
+  --token-file /var/run/secrets/kubernetes.io/serviceaccount/token \
+  --ca-file /etc/evalhub-ca/service-ca.crt
+```
+
+The live command uses the current clock and therefore rejects stale evidence. It still
+uses the no-op proposal sink and cannot claim execution.
 
 Regenerate the committed contract schemas:
 
@@ -122,6 +140,7 @@ See [integration points](docs/integrations.md) for the boundary of each adapter.
 - [Integration points](docs/integrations.md)
 - [Standalone demo](docs/standalone-demo.md)
 - [EvalHub integration](docs/evalhub-integration.md)
+- [Oberon EvalHub qualification](deploy/oberon/README.md)
 - [TrustyAI and EvalHub engagement brief](docs/trustyai-engagement.md)
 - [ADR 0001: proposal-only kernel](docs/adr/0001-proposal-only-kernel.md)
 - [Roadmap](ROADMAP.md)
