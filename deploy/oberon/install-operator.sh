@@ -14,9 +14,11 @@ RENDERED_MANIFEST="$SOURCE_DIR/evalhub-operator.yaml"
 trap 'rm -rf "$SOURCE_DIR"' EXIT HUP INT TERM
 
 command -v git >/dev/null
+command -v jq >/dev/null
 command -v oc >/dev/null
 
 oc apply -f "$SCRIPT_DIR/namespaces.yaml"
+oc apply -f "$SCRIPT_DIR/operator-prerequisites.yaml"
 
 git -C "$SOURCE_DIR" init --quiet
 git -C "$SOURCE_DIR" remote add origin "$OPERATOR_REPOSITORY"
@@ -38,6 +40,38 @@ grep -F "$EVALHUB_IMAGE" "$RENDERED_MANIFEST" >/dev/null
 grep -F "$RBAC_PROXY_IMAGE" "$RENDERED_MANIFEST" >/dev/null
 
 oc apply -f "$RENDERED_MANIFEST"
+
+# The pinned component emits unprefixed ClusterRoles while its controller and
+# manager RoleBinding reference trustyai-service-operator-prefixed names. Preserve
+# the rendered roles for its static bindings and create exact prefixed copies for
+# the controller-created tenant bindings.
+for ROLE_NAME in \
+  evalhub-auth-reviewer-role \
+  evalhub-collections-access \
+  evalhub-hardware-profiles-reader \
+  evalhub-job-config \
+  evalhub-jobs-writer \
+  evalhub-manager-role \
+  evalhub-mlflow-access \
+  evalhub-mlflow-jobs-access \
+  evalhub-model-secret \
+  evalhub-providers-access
+do
+  PREFIXED_ROLE_NAME="trustyai-service-operator-$ROLE_NAME"
+  oc get clusterrole "$ROLE_NAME" -o json \
+    | jq --arg name "$PREFIXED_ROLE_NAME" '
+        del(
+          .metadata.annotations["kubectl.kubernetes.io/last-applied-configuration"],
+          .metadata.creationTimestamp,
+          .metadata.managedFields,
+          .metadata.resourceVersion,
+          .metadata.uid
+        )
+        | .metadata.name = $name
+      ' \
+    | oc apply -f -
+done
+
 oc rollout status deployment/controller-manager \
   -n "$OPERATOR_NAMESPACE" \
   --timeout=300s

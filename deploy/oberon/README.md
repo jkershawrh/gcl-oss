@@ -23,6 +23,13 @@ The pinned upstream manifest omits the namespace on the
 `manager-auth-delegator` service-account subject. OpenShift rejects that binding.
 `operator-auth-delegator.patch` adds the conventional `system` placeholder before
 rendering; the installer then rewrites it to the isolated operator namespace.
+The same overlay mounts `webhook-server-cert` without including its webhook Service.
+`operator-prerequisites.yaml` creates that Service with the OpenShift serving-certificate
+annotation, which provisions the missing secret without introducing cert-manager.
+Finally, the component emits unprefixed EvalHub ClusterRoles while its controller code
+and manager binding reference `trustyai-service-operator-`-prefixed names. The installer
+creates exact prefixed copies after applying the upstream roles. The unprefixed copies
+remain because the upstream static bindings still reference them.
 
 ## Isolation and authority
 
