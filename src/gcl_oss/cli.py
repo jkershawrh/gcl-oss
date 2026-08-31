@@ -14,6 +14,12 @@ from pathlib import Path
 from gcl_oss.adapters.evalhub import EvalHubHTTPClient, normalize_evalhub_job
 from gcl_oss.adapters.evalhub_oci import verify_evalhub_oci_artifacts
 from gcl_oss.adapters.oci import OCIRegistryVerifier, parse_oci_reference
+from gcl_oss.adapters.trustyai_service import (
+    TrustyAIMetricKind,
+    TrustyAIServiceHTTPClient,
+    metric_contract,
+    normalize_trustyai_metric,
+)
 from gcl_oss.builtin import (
     EvidenceFreshnessCheck,
     FailedMeasurementConstraintClassifier,
@@ -40,6 +46,11 @@ from gcl_oss.policy_packs.evalhub import (
     EVALHUB_PROMOTION_CONSTRAINT,
     EvalHubEvidencePolicy,
     EvalHubPromotionConstraintClassifier,
+)
+from gcl_oss.policy_packs.trustyai_service import (
+    TRUSTYAI_RUNTIME_REVIEW_CONSTRAINT,
+    TrustyAIRuntimeConstraintClassifier,
+    TrustyAIServiceEvidencePolicy,
 )
 from gcl_oss.ports import ArtifactVerificationRequest
 from gcl_oss.schemas import write_schemas
@@ -117,6 +128,32 @@ def _load_evalhub_payload(path: Path | None) -> dict:
             payload = json.load(source)
     if not isinstance(payload, dict):
         raise ValueError("EvalHub input must be a JSON object")
+    return payload
+
+
+def _load_json_object(path: Path, *, label: str) -> dict:
+    with path.open(encoding="utf-8") as source:
+        payload = json.load(source)
+    if not isinstance(payload, dict):
+        raise ValueError(f"{label} must be a JSON object")
+    return payload
+
+
+def _load_trustyai_demo_payload(path: Path | None) -> dict:
+    if path is not None:
+        payload = _load_json_object(path, label="TrustyAI demonstration input")
+    else:
+        fixture = resources.files("gcl_oss.data").joinpath(
+            "trustyai-kstest-drift.json"
+        )
+        with fixture.open(encoding="utf-8") as source:
+            payload = json.load(source)
+    if not isinstance(payload.get("request"), dict):
+        raise ValueError("TrustyAI demonstration input requires a request object")
+    if not isinstance(payload.get("response"), dict):
+        raise ValueError("TrustyAI demonstration input requires a response object")
+    if not isinstance(payload.get("metric_kind"), str):
+        raise ValueError("TrustyAI demonstration input requires metric_kind")
     return payload
 
 
@@ -201,6 +238,76 @@ async def _run_evalhub_cycle(
     return payload
 
 
+async def _run_trustyai_cycle(
+    item: EvidenceEnvelope,
+    *,
+    source_base_url: str,
+    now: datetime,
+    key_id: str,
+    proposer: ProposerIdentity,
+) -> dict:
+    sink = NoOpProposalSink()
+    proof = MemoryProofRecorder()
+    signer = StaticSigner(key_id, os.urandom(32))
+    kernel = GovernanceKernel(
+        planner=ReviewFailedMeasurementsPlanner(
+            constraint_names=(TRUSTYAI_RUNTIME_REVIEW_CONSTRAINT,)
+        ),
+        objective_interpreter=RiskReductionObjectiveInterpreter(),
+        constraint_classifiers=[TrustyAIRuntimeConstraintClassifier()],
+        registry=standalone_action_registry(),
+        falsification_checks=[EvidenceFreshnessCheck()],
+        signer=signer,
+        key_id=key_id,
+        proposer=proposer,
+        proposal_sink=sink,
+        policy_checks=[
+            TrustyAIServiceEvidencePolicy(
+                expected_producer_prefix=source_base_url,
+            )
+        ],
+        proof_recorders=[proof],
+        clock=lambda: now,
+    )
+    result = await kernel.run([item], scope=item.scope)
+    payload = result.model_dump(mode="json", exclude_none=True)
+    payload["normalized_evidence"] = item.model_dump(mode="json", exclude_none=True)
+    payload["proof_entry_count"] = len(proof.entries)
+    payload["proposal_delivery_count"] = len(sink.packages)
+    return payload
+
+
+async def _run_trustyai_demo(
+    raw: dict,
+    *,
+    source_base_url: str,
+    scope: Scope,
+    model_version: str | None,
+) -> dict:
+    contract = metric_contract(raw["metric_kind"])
+    observed_at = datetime(2026, 8, 31, 22, 0, tzinfo=timezone.utc)
+    item = normalize_trustyai_metric(
+        raw["request"],
+        raw["response"],
+        metric_kind=contract.kind,
+        source_url=source_base_url.rstrip("/") + contract.endpoint,
+        scope=scope,
+        observed_at=observed_at,
+        model_version=model_version,
+    )
+    return await _run_trustyai_cycle(
+        item,
+        source_base_url=source_base_url,
+        now=observed_at + timedelta(seconds=1),
+        key_id="trustyai-demo-ephemeral",
+        proposer=ProposerIdentity(
+            id="gcl-oss-trustyai-demo",
+            workload_identity="spiffe://example.org/ns/local/sa/gcl-trustyai-demo",
+            trust_domain="example.org",
+        ),
+    )
+
+
 def _read_bearer_token(path: Path | None) -> str | None:
     if path is None:
         return None
@@ -252,6 +359,58 @@ async def _run_evalhub_live(args: argparse.Namespace) -> dict:
             trust_domain=args.trust_domain,
         ),
         require_verified_oci_artifacts=args.verify_oci,
+    )
+
+
+async def _run_trustyai_live(args: argparse.Namespace) -> dict:
+    scope = Scope(
+        tenant=args.tenant,
+        namespace=args.namespace,
+        environment=args.environment,
+    )
+    request_payload = _load_json_object(
+        args.request,
+        label="TrustyAI metric request",
+    )
+    metric_kind = TrustyAIMetricKind(args.metric)
+    client = TrustyAIServiceHTTPClient(
+        args.base_url,
+        bearer_token=_read_bearer_token(args.token_file),
+        timeout=args.timeout,
+        ca_file=args.ca_file,
+        allow_insecure_http=args.allow_insecure_http,
+        max_request_bytes=args.max_request_bytes,
+        max_response_bytes=args.max_response_bytes,
+    )
+    raw_response = await asyncio.to_thread(
+        client.compute,
+        metric_kind,
+        request_payload,
+    )
+    observed_at = datetime.now(timezone.utc)
+    item = normalize_trustyai_metric(
+        request_payload,
+        raw_response,
+        metric_kind=metric_kind,
+        source_url=client.metric_url(metric_kind),
+        scope=scope,
+        observed_at=observed_at,
+        validity=timedelta(minutes=args.validity_minutes),
+        model_version=args.model_version,
+    )
+    workload_identity = args.workload_identity or (
+        f"spiffe://{args.trust_domain}/ns/{scope.namespace}/sa/gcl-oss-qualifier"
+    )
+    return await _run_trustyai_cycle(
+        item,
+        source_base_url=client.base_url,
+        now=datetime.now(timezone.utc),
+        key_id="trustyai-live-ephemeral",
+        proposer=ProposerIdentity(
+            id="gcl-oss-trustyai-live",
+            workload_identity=workload_identity,
+            trust_domain=args.trust_domain,
+        ),
     )
 
 
@@ -357,6 +516,23 @@ def _parser() -> argparse.ArgumentParser:
     evalhub_demo.add_argument("--namespace", default="models")
     evalhub_demo.add_argument("--environment", default="staging")
     evalhub_demo.add_argument("--model-version", default="v7")
+    trustyai_demo = subcommands.add_parser(
+        "trustyai-demo",
+        help="normalize a TrustyAI metric response and run a signed offline cycle",
+    )
+    trustyai_demo.add_argument(
+        "--input",
+        type=Path,
+        help="request/response fixture; defaults to packaged KS drift evidence",
+    )
+    trustyai_demo.add_argument(
+        "--source-base-url",
+        default="https://trustyai.example",
+    )
+    trustyai_demo.add_argument("--tenant", default="team-a")
+    trustyai_demo.add_argument("--namespace", default="models")
+    trustyai_demo.add_argument("--environment", default="staging")
+    trustyai_demo.add_argument("--model-version", default="v7")
     evalhub_live = subcommands.add_parser(
         "evalhub-live",
         help="fetch one terminal EvalHub job and run a signed proposal-only cycle",
@@ -380,6 +556,30 @@ def _parser() -> argparse.ArgumentParser:
         help="fetch and verify every OCI manifest and descriptor before policy admission",
     )
     _add_registry_arguments(evalhub_live, allow_required=False)
+    trustyai_live = subcommands.add_parser(
+        "trustyai-live",
+        help="compute one TrustyAI metric and run a signed proposal-only cycle",
+    )
+    trustyai_live.add_argument("--base-url", required=True)
+    trustyai_live.add_argument(
+        "--metric",
+        required=True,
+        choices=[kind.value for kind in TrustyAIMetricKind],
+    )
+    trustyai_live.add_argument("--request", required=True, type=Path)
+    trustyai_live.add_argument("--tenant", required=True)
+    trustyai_live.add_argument("--namespace", required=True)
+    trustyai_live.add_argument("--environment", required=True)
+    trustyai_live.add_argument("--model-version")
+    trustyai_live.add_argument("--token-file", type=Path)
+    trustyai_live.add_argument("--ca-file", type=Path)
+    trustyai_live.add_argument("--timeout", type=float, default=10.0)
+    trustyai_live.add_argument("--validity-minutes", type=int, default=15)
+    trustyai_live.add_argument("--max-request-bytes", type=int, default=1024 * 1024)
+    trustyai_live.add_argument("--max-response-bytes", type=int, default=1024 * 1024)
+    trustyai_live.add_argument("--allow-insecure-http", action="store_true")
+    trustyai_live.add_argument("--trust-domain", default="cluster.local")
+    trustyai_live.add_argument("--workload-identity")
     oci_verify = subcommands.add_parser(
         "oci-verify",
         help="verify a digest-pinned OCI manifest and all config/layer content",
@@ -417,8 +617,29 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
+    if args.command == "trustyai-demo":
+        raw = _load_trustyai_demo_payload(args.input)
+        scope = Scope(
+            tenant=args.tenant,
+            namespace=args.namespace,
+            environment=args.environment,
+        )
+        payload = asyncio.run(
+            _run_trustyai_demo(
+                raw,
+                source_base_url=args.source_base_url,
+                scope=scope,
+                model_version=args.model_version,
+            )
+        )
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
     if args.command == "evalhub-live":
         payload = asyncio.run(_run_evalhub_live(args))
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    if args.command == "trustyai-live":
+        payload = asyncio.run(_run_trustyai_live(args))
         print(json.dumps(payload, indent=2, sort_keys=True))
         return 0
     if args.command == "oci-verify":

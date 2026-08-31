@@ -38,10 +38,12 @@ Released as `v0.2.0a1` with wheel and source artifacts.
 - EvalHub promotion policy pack and signed offline fixture demonstration (implemented).
 - Generic artifact-verification port and OCI Distribution manifest/descriptor verifier
   with receipt-aware EvalHub policy (implemented and qualified on Oberon).
-- TrustyAI Service evidence adapter.
-- Reference drift, fairness, safety, and promotion policy packs.
-- Reproducible local and OpenShift demonstrations (EvalHub path complete; TrustyAI
-  Service path remains).
+- TrustyAI Service drift and group-fairness evidence adapter for six pinned compute
+  contracts (implemented).
+- Reference runtime-review and promotion policy packs (implemented for TrustyAI
+  drift/fairness and EvalHub safety/promotion evidence).
+- Reproducible local and OpenShift demonstrations (implemented for both EvalHub and
+  TrustyAI Service; qualification records remain release evidence).
 - Joint contract fixtures suitable for upstream review.
 
 Exit criteria: a TrustyAI or EvalHub result produces a signed proposal without giving GCL actuation authority.

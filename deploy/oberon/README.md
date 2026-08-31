@@ -1,7 +1,8 @@
-# Oberon EvalHub qualification
+# Oberon TrustyAI qualification
 
-This deployment is an isolated contract qualification for GCL OSS and EvalHub. It
-does not modify or reference the `governed-cognitive-loop` namespace.
+This deployment is an isolated contract qualification for GCL OSS, EvalHub, and
+TrustyAI Service. It does not modify or reference the `governed-cognitive-loop`
+namespace.
 The initial API-contract run and the later registry-content run are recorded in the
 [contract qualification report](../../docs/qualification/oberon-evalhub-2026-08-31.md)
 and [OCI-content qualification report](../../docs/qualification/oberon-evalhub-oci-2026-08-31.md).
@@ -15,6 +16,10 @@ and [OCI-content qualification report](../../docs/qualification/oberon-evalhub-o
 - EvalHub image and API contract:
   `quay.io/evalhub/evalhub@sha256:0b9b9cb7121170eb28d7a723b487282cc6ef3640ec9cf9ff6ba50b1bf04a61a1`
   (source revision `42c09dc6aa0a9f6b1cd1e2bb1b7cacc616dcf13e`)
+- TrustyAI Service image:
+  `image-registry.openshift-image-registry.svc:5000/gcl-oss-trustyai/trustyai-service@sha256:b136756d91763c2f33978565443e6d1ae5cf0daca76e09a67c722a3ffeda1a24`
+  (source revision `f78ca0e91cc24745fdaacb8f8ae893b059c03a0c`, version
+  `1.0.0rc0`)
 - kube-rbac-proxy image:
   `quay.io/opendatahub/odh-kube-rbac-proxy@sha256:c19ed97828e4e5e736334b3ea340ba92a5d0c95f7b21080c6fd7ccf6d36836af`
 
@@ -48,9 +53,10 @@ template processing, which otherwise strips the namespace from processed objects
 ## Isolation and authority
 
 - `gcl-oss-trustyai` contains the operator and one multi-tenant EvalHub instance.
-- `gcl-oss-evalhub` is the only tenant and contains the GCL qualification Job.
+- `gcl-oss-evalhub` is the only tenant and contains the standalone TrustyAI Service
+  plus the GCL qualification Jobs.
 - `gcl-oss-qualifier` receives only `get` on the synthetic `evaluations` RBAC
-  resource in its own tenant namespace.
+  resource and one named TrustyAI Service in its own tenant namespace.
 - GCL uses a no-op proposal sink. A successful run must report
   `execution_verified=false`.
 
@@ -116,3 +122,40 @@ The qualification also proves that the same service account receives HTTP 403 wh
 it substitutes the control-plane namespace in `X-Tenant`. It retains the terminal
 EvalHub API record and completed GCL Job logs, but removes the synthetic sleeping
 runtime Job and ConfigMap.
+
+## TrustyAI Service path
+
+The TrustyAI Service adapter consumes the service API and does not require an operator
+change. Oberon has no KServe `InferenceService` CRD, while the pinned operator's TAS
+controller unconditionally watches that type. Enabling TAS on this cluster therefore
+leaves the controller waiting for a missing API. The installer deliberately keeps the
+operator on `EVALHUB` only and deploys the exact TrustyAI Service image directly in the
+isolated tenant namespace.
+
+The standalone workload reproduces the operator's security boundary: the application
+listens on loopback behind a digest-pinned kube-rbac-proxy, the public and in-cluster
+paths use OpenShift service certificates, and proxy authorization checks `get` on the
+one named Service. The Service image is pulled across namespaces through a dedicated
+`system:image-puller` binding. Its PVC explicitly selects Oberon's `ocpv-tenants`
+storage class because this cluster has no default storage class. `Recreate` deployment
+strategy prevents a single-writer PVC from deadlocking a rolling update.
+
+The application certificate is also mounted at `/etc/tls/internal`. The pinned Python
+service starts its intended loopback port `8081` only when a TLS certificate is
+present; without it Hypercorn retains its default loopback port `8000`, which would
+leave the auth proxy without an upstream.
+
+The administrator-run seed script uploads a tagged 100-row baseline and a shifted
+100-row current sample for a synthetic model. GCL itself calls only
+`POST /metrics/drift/kstest`; it never uploads data or mutates metric schedules.
+
+After building and pushing the current GCL source at an immutable digest, run:
+
+```bash
+GCL_IMAGE='image-registry.openshift-image-registry.svc:5000/gcl-oss-evalhub/gcl-oss@sha256:...' \
+  deploy/oberon/run-trustyai-qualification.sh
+```
+
+The runner requires a failed KS drift result, pinned TrustyAI API revision, request and
+response digests, strict evidence-policy admission, a hard runtime-review constraint,
+one no-op delivery, and `execution_verified=false`.

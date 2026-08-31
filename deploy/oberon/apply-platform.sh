@@ -13,3 +13,6 @@ oc wait evalhub/evalhub \
 oc rollout status deployment/evalhub \
   -n gcl-oss-trustyai \
   --timeout=300s
+oc rollout status deployment/gcl-oss-trustyai-service \
+  -n gcl-oss-evalhub \
+  --timeout=300s

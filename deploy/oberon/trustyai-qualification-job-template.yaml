@@ -1,0 +1,87 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: gcl-oss-trustyai-qualification
+  namespace: gcl-oss-evalhub
+parameters:
+  - name: GCL_IMAGE
+    description: Digest-pinned GCL OSS image available to the tenant namespace.
+    required: true
+objects:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: gcl-oss-trustyai-qualification
+      namespace: gcl-oss-evalhub
+      labels:
+        app.kubernetes.io/name: gcl-oss
+        app.kubernetes.io/component: trustyai-qualification
+    spec:
+      backoffLimit: 0
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: gcl-oss
+            app.kubernetes.io/component: trustyai-qualification
+        spec:
+          serviceAccountName: gcl-oss-qualifier
+          automountServiceAccountToken: true
+          restartPolicy: Never
+          securityContext:
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: gcl-oss
+              image: ${GCL_IMAGE}
+              imagePullPolicy: IfNotPresent
+              args:
+                - trustyai-live
+                - --base-url
+                - https://gcl-oss-trustyai-service.gcl-oss-evalhub.svc:443
+                - --metric
+                - drift-kstest
+                - --request
+                - /etc/trustyai-request/request.json
+                - --tenant
+                - gcl-oss-evalhub
+                - --namespace
+                - gcl-oss-evalhub
+                - --environment
+                - oberon
+                - --model-version
+                - qualification-v1
+                - --token-file
+                - /var/run/secrets/kubernetes.io/serviceaccount/token
+                - --ca-file
+                - /etc/trustyai-ca/service-ca.crt
+              env:
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 64Mi
+                limits:
+                  cpu: 250m
+                  memory: 256Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+              volumeMounts:
+                - name: trustyai-service-ca
+                  mountPath: /etc/trustyai-ca
+                  readOnly: true
+                - name: trustyai-request
+                  mountPath: /etc/trustyai-request
+                  readOnly: true
+          volumes:
+            - name: trustyai-service-ca
+              configMap:
+                name: trustyai-service-ca
+            - name: trustyai-request
+              configMap:
+                name: gcl-oss-trustyai-request

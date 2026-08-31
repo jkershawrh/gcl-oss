@@ -50,13 +50,18 @@ The tagged `0.2.0a1` standalone alpha contains the vendor-neutral kernel. The
 - a live EvalHub CLI path for projected service-account tokens and private cluster CAs;
 - a generic artifact-verification port, a bounded OCI Distribution verifier, and
   receipt-aware EvalHub policy;
+- a TrustyAI Service adapter for six pinned drift and group-fairness compute
+  contracts, with a bounded authenticated client and raw-data-minimizing provenance;
+- a strict TrustyAI evidence policy and deterministic runtime-review constraint pack;
+- offline and live TrustyAI CLI paths that remain proposal-only;
 - a packaged failed-safety EvalHub fixture and signed end-to-end demonstration;
 - an architecture and integration plan covering several ecosystems.
 
 It is an alpha reference kernel, not a production release. The EvalHub adapter has
 local API and isolated OpenShift contract qualification; its Oberon assets and
 [qualification record](docs/qualification/oberon-evalhub-2026-08-31.md) are committed.
-TrustyAI Service adapters and durable distributed idempotency remain roadmap work.
+The TrustyAI Service adapter has local contract coverage and an isolated Oberon
+qualification path. Durable distributed idempotency remains roadmap work.
 
 ## Install for development
 
@@ -108,6 +113,30 @@ manifest plus every descriptor before strict policy evaluation. Registry credent
 come from `--registry-auth-file` or the file-based username/password options; secret
 values are never accepted directly on the command line.
 
+Run the offline TrustyAI Service contract demonstration:
+
+```bash
+gcl-oss trustyai-demo
+```
+
+Or compute one metric through an authenticated live TrustyAI Service and produce a
+signed, no-op proposal:
+
+```bash
+gcl-oss trustyai-live \
+  --base-url https://trustyai.example \
+  --metric drift-kstest \
+  --request request.json \
+  --tenant team-a \
+  --namespace models \
+  --environment staging \
+  --token-file /var/run/secrets/kubernetes.io/serviceaccount/token \
+  --ca-file /etc/trustyai-ca/service-ca.crt
+```
+
+See the [TrustyAI Service integration](docs/trustyai-service-integration.md) for the
+supported contracts, provenance limits, and deployment boundary.
+
 Regenerate the committed contract schemas:
 
 ```bash
@@ -149,6 +178,7 @@ See [integration points](docs/integrations.md) for the boundary of each adapter.
 - [Integration points](docs/integrations.md)
 - [Standalone demo](docs/standalone-demo.md)
 - [EvalHub integration](docs/evalhub-integration.md)
+- [TrustyAI Service integration](docs/trustyai-service-integration.md)
 - [Oberon EvalHub qualification](deploy/oberon/README.md)
 - [Oberon qualification record](docs/qualification/oberon-evalhub-2026-08-31.md)
 - [Oberon OCI-content qualification](docs/qualification/oberon-evalhub-oci-2026-08-31.md)

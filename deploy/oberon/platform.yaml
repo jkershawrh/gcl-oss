@@ -64,6 +64,319 @@ metadata:
     app.kubernetes.io/part-of: gcl-oss-evalhub-qualification
 automountServiceAccountToken: true
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gcl-oss-trustyai-service-pvc
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ocpv-tenants
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: trustyai-service-ca
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gcl-oss-trustyai-request
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+data:
+  request.json: |
+    {
+      "modelId": "gcl-oss-oberon-drift-20260831",
+      "metricName": "KSTest",
+      "batchSize": 100,
+      "thresholdDelta": 0.05,
+      "referenceTag": "gcl-oss-baseline-20260831"
+    }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gcl-oss-trustyai-service-proxy
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gcl-oss-trustyai-auth-reviewer
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+rules:
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+  - apiGroups:
+      - authorization.k8s.io
+    resources:
+      - subjectaccessreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gcl-oss-trustyai-auth-reviewer
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: gcl-oss-trustyai-auth-reviewer
+subjects:
+  - kind: ServiceAccount
+    name: gcl-oss-trustyai-service-proxy
+    namespace: gcl-oss-evalhub
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gcl-oss-trustyai-service-image-puller
+  namespace: gcl-oss-trustyai
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:image-puller
+subjects:
+  - kind: ServiceAccount
+    name: gcl-oss-trustyai-service-proxy
+    namespace: gcl-oss-evalhub
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gcl-oss-trustyai-service-proxy
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+data:
+  config.yaml: |
+    authorization:
+      resourceAttributes:
+        namespace: "gcl-oss-evalhub"
+        resource: "services"
+        name: "gcl-oss-trustyai-service"
+        verb: "get"
+        apiGroup: ""
+    upstreamConfig:
+      url: "http://127.0.0.1:8081"
+      proxyTimeout: "30s"
+    tlsConfig:
+      minVersion: "VersionTLS12"
+      cipherSuites:
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_RSA_WITH_AES_128_GCM_SHA256"
+        - "TLS_RSA_WITH_AES_256_GCM_SHA384"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gcl-oss-trustyai-service
+  namespace: gcl-oss-evalhub
+  labels:
+    app: gcl-oss-trustyai-service
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: gcl-oss-trustyai-service-tls
+spec:
+  selector:
+    app: gcl-oss-trustyai-service
+  ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 8443
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gcl-oss-trustyai-service
+  namespace: gcl-oss-evalhub
+  labels:
+    app: gcl-oss-trustyai-service
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gcl-oss-trustyai-service
+  template:
+    metadata:
+      labels:
+        app: gcl-oss-trustyai-service
+        app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+    spec:
+      serviceAccountName: gcl-oss-trustyai-service-proxy
+      containers:
+        - name: trustyai-service
+          image: image-registry.openshift-image-registry.svc:5000/gcl-oss-trustyai/trustyai-service@sha256:b136756d91763c2f33978565443e6d1ae5cf0daca76e09a67c722a3ffeda1a24
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: SERVICE_STORAGE_FORMAT
+              value: PVC
+            - name: STORAGE_DATA_FOLDER
+              value: /inputs
+            - name: STORAGE_DATA_FILENAME
+              value: data.csv
+            - name: SERVICE_DATA_FORMAT
+              value: CSV
+            - name: SERVICE_METRICS_SCHEDULE
+              value: 5s
+            - name: SERVICE_BATCH_SIZE
+              value: "100"
+          ports:
+            - name: health
+              containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 2
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: health
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: data
+              mountPath: /inputs
+            - name: proxy-tls
+              mountPath: /etc/tls/internal
+              readOnly: true
+        - name: kube-rbac-proxy
+          image: quay.io/opendatahub/odh-kube-rbac-proxy@sha256:c19ed97828e4e5e736334b3ea340ba92a5d0c95f7b21080c6fd7ccf6d36836af
+          imagePullPolicy: IfNotPresent
+          args:
+            - --secure-listen-address=0.0.0.0:8443
+            - --upstream=http://127.0.0.1:8081/
+            - --config-file=/etc/kube-rbac-proxy/config.yaml
+            - --tls-cert-file=/etc/tls/private/tls.crt
+            - --tls-private-key-file=/etc/tls/private/tls.key
+            - --proxy-endpoints-port=9443
+            - --v=0
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            - name: proxy-healthz
+              containerPort: 9443
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: proxy-healthz
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 1
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: proxy-healthz
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 1
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: proxy-config
+              mountPath: /etc/kube-rbac-proxy
+              readOnly: true
+            - name: proxy-tls
+              mountPath: /etc/tls/private
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: gcl-oss-trustyai-service-pvc
+        - name: proxy-config
+          configMap:
+            name: gcl-oss-trustyai-service-proxy
+        - name: proxy-tls
+          secret:
+            secretName: gcl-oss-trustyai-service-tls
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: gcl-oss-trustyai-service
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+spec:
+  to:
+    kind: Service
+    name: gcl-oss-trustyai-service
+    weight: 100
+  port:
+    targetPort: https
+  tls:
+    termination: reencrypt
+    insecureEdgeTerminationPolicy: Redirect
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -78,6 +391,39 @@ rules:
       - evaluations
     verbs:
       - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gcl-oss-trustyai-metric-reader
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    resourceNames:
+      - gcl-oss-trustyai-service
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gcl-oss-trustyai-metric-reader
+  namespace: gcl-oss-evalhub
+  labels:
+    app.kubernetes.io/part-of: gcl-oss-trustyai-qualification
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gcl-oss-trustyai-metric-reader
+subjects:
+  - kind: ServiceAccount
+    name: gcl-oss-qualifier
+    namespace: gcl-oss-evalhub
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

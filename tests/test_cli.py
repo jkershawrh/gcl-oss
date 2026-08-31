@@ -40,6 +40,25 @@ def test_evalhub_demo_normalizes_failed_collection_and_proposes_review(capsys) -
     assert selected["action"].endswith("/request_review")
 
 
+def test_trustyai_demo_normalizes_drift_and_proposes_runtime_review(capsys) -> None:
+    assert main(["trustyai-demo"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload["status"] == "proposed"
+    assert payload["normalized_evidence"]["measurement"] == {
+        "name": "trustyai.drift.kstest.p_value",
+        "status": "failed",
+        "threshold": 0.05,
+        "unit": "p_value",
+        "value": 0.001,
+    }
+    assert payload["signed_package"]["package"]["constraints"][0][
+        "name"
+    ].endswith("/runtime-review-required")
+    assert payload["proposal_receipt"]["execution_verified"] is False
+    assert payload["proposal_delivery_count"] == 1
+
+
 def test_evalhub_live_uses_token_file_and_current_clock(
     tmp_path, monkeypatch, capsys
 ) -> None:
@@ -181,3 +200,65 @@ def test_evalhub_live_can_require_registry_verified_oci_content(
     assert "registry-verified OCI content" in payload["signed_package"]["package"][
         "policy_results"
     ][0]["reason"]
+
+
+def test_trustyai_live_uses_token_file_and_authenticated_compute_response(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    fixture_path = resources.files("gcl_oss.data").joinpath(
+        "trustyai-kstest-drift.json"
+    )
+    with fixture_path.open(encoding="utf-8") as source:
+        fixture = json.load(source)
+
+    class FakeClient:
+        base_url = "https://trustyai.example"
+
+        def __init__(self, base_url, *, bearer_token, **kwargs):
+            assert base_url == self.base_url
+            assert bearer_token == "projected-token"
+
+        def metric_url(self, kind):
+            assert kind.value == "drift-kstest"
+            return self.base_url + "/metrics/drift/kstest"
+
+        def compute(self, kind, request):
+            assert kind.value == "drift-kstest"
+            assert request == fixture["request"]
+            return fixture["response"]
+
+    monkeypatch.setattr(cli, "TrustyAIServiceHTTPClient", FakeClient)
+    token_file = tmp_path / "token"
+    token_file.write_text("projected-token\n", encoding="utf-8")
+    request_file = tmp_path / "request.json"
+    request_file.write_text(json.dumps(fixture["request"]), encoding="utf-8")
+
+    assert (
+        main(
+            [
+                "trustyai-live",
+                "--base-url",
+                "https://trustyai.example",
+                "--metric",
+                "drift-kstest",
+                "--request",
+                str(request_file),
+                "--tenant",
+                "team-a",
+                "--namespace",
+                "models",
+                "--environment",
+                "test",
+                "--token-file",
+                str(token_file),
+            ]
+        )
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "proposed"
+    assert payload["normalized_evidence"]["scope"]["tenant"] == "team-a"
+    assert payload["normalized_evidence"]["extensions"][
+        "org.trustyai.service/provenance-mode"
+    ] == "authenticated-compute-response"
+    assert payload["proposal_receipt"]["execution_verified"] is False

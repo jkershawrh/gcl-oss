@@ -22,7 +22,8 @@ GCL OSS integrates at evidence, policy, proposal, proof, telemetry, and outcome 
 
 ## TrustyAI Service
 
-The adapter consumes TrustyAI-computed drift, fairness, and monitoring results. It maps:
+The implemented adapter consumes explicit TrustyAI-computed drift and group-fairness
+responses. It maps:
 
 - producer service identity;
 - OpenShift namespace and tenant;
@@ -36,6 +37,11 @@ The adapter consumes TrustyAI-computed drift, fairness, and monitoring results. 
 TrustyAI owns the metric computation. GCL OSS must not reproduce the algorithm or change a passing result to failing. A policy pack decides how a valid result constrains proposals.
 
 The integration is intentionally split in two. The evidence adapter only normalizes a TrustyAI result. A separately versioned policy pack derives namespaced, evidence-bound constraints such as review required or promotion blocked. This keeps a source-schema change from silently changing governance policy and lets TrustyAI contributors review the adapter without adopting GCL's proposal semantics.
+
+The first contract pins six current compute endpoints: KS test, compare means,
+Jensen-Shannon, MMD, statistical parity difference, and disparate impact ratio. The
+client does not expose TrustyAI data upload or metric-schedule mutation. See the
+[TrustyAI Service integration specification](trustyai-service-integration.md).
 
 ## EvalHub
 

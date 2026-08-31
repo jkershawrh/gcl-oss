@@ -190,5 +190,6 @@ docs/                architecture, ADRs, and integration specifications
 The orchestration kernel, built-in in-memory adapters, no-op proposal sink, schema
 fixtures, and offline demonstrations are implemented without importing the production
 proof implementation. The EvalHub adapter, policy pack, generic artifact-verification
-port, and OCI Distribution verifier are present. TrustyAI Service integration and the
-broader conformance kit remain roadmap work.
+port, and OCI Distribution verifier are present. The TrustyAI Service adapter and its
+runtime-review policy cover six pinned drift and group-fairness compute contracts. The
+broader conformance kit remains roadmap work.

@@ -1,0 +1,25 @@
+{
+  "metric_kind": "drift-kstest",
+  "request": {
+    "batchSize": 100,
+    "fitColumns": [
+      "transaction_amount"
+    ],
+    "modelId": "fraud-detector",
+    "referenceTag": "baseline"
+  },
+  "response": {
+    "alpha": 0.05,
+    "drift_detected": true,
+    "feature_results": {
+      "transaction_amount": {
+        "drift_detected": true,
+        "p_value": 0.001,
+        "statistic": 0.42
+      }
+    },
+    "p_value": 0.001,
+    "status": "success",
+    "value": 0.42
+  }
+}
