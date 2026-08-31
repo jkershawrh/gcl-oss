@@ -32,7 +32,7 @@ oc delete job "$QUALIFICATION_JOB" \
 oc process -f "$SCRIPT_DIR/qualification-job-template.yaml" \
   -p "GCL_IMAGE=$GCL_IMAGE" \
   -p "EVALHUB_JOB_ID=$JOB_ID" \
-  | oc apply -f -
+  | oc apply -n "$TENANT_NAMESPACE" -f -
 
 if ! oc wait job/$QUALIFICATION_JOB \
   -n "$TENANT_NAMESPACE" \

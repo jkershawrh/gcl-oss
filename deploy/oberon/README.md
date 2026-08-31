@@ -39,6 +39,8 @@ remain because the upstream static bindings still reference them.
 The rendered leader-election Role and RoleBinding have no metadata namespace. The
 installer always supplies `-n gcl-oss-trustyai` when applying the bundle so they cannot
 inherit whichever project happens to be active in the caller's `oc` context.
+The qualification runner likewise supplies `-n gcl-oss-evalhub` after OpenShift
+template processing, which otherwise strips the namespace from processed objects.
 
 ## Isolation and authority
 
