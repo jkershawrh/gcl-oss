@@ -19,6 +19,11 @@ The latest formal TrustyAI Operator release (`v1.38.0`) predates EvalHub. This
 qualification therefore pins a development manifest and image and must not be
 described as a supported Red Hat deployment.
 
+The pinned upstream manifest omits the namespace on the
+`manager-auth-delegator` service-account subject. OpenShift rejects that binding.
+`operator-auth-delegator.patch` adds the conventional `system` placeholder before
+rendering; the installer then rewrites it to the isolated operator namespace.
+
 ## Isolation and authority
 
 - `gcl-oss-trustyai` contains the operator and one multi-tenant EvalHub instance.

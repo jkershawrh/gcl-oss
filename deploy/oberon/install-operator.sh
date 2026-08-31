@@ -23,6 +23,7 @@ git -C "$SOURCE_DIR" remote add origin "$OPERATOR_REPOSITORY"
 git -C "$SOURCE_DIR" fetch --quiet --depth 1 origin "$OPERATOR_REVISION"
 git -C "$SOURCE_DIR" checkout --quiet --detach FETCH_HEAD
 test "$(git -C "$SOURCE_DIR" rev-parse HEAD)" = "$OPERATOR_REVISION"
+git -C "$SOURCE_DIR" apply "$SCRIPT_DIR/operator-auth-delegator.patch"
 
 oc kustomize "$SOURCE_DIR/config/overlays/evalhub-only" \
   | sed \

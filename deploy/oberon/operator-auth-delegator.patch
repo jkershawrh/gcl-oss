@@ -1,0 +1,8 @@
+diff --git a/config/rbac-base/auth-delegator.yml b/config/rbac-base/auth-delegator.yml
+index 85da272..e18f167 100644
+--- a/config/rbac-base/auth-delegator.yml
++++ b/config/rbac-base/auth-delegator.yml
+@@ -11,3 +11,4 @@ subjects:
+ - kind: ServiceAccount
+   name: controller-manager
++  namespace: system
