@@ -60,8 +60,9 @@ The tagged `0.2.0a1` standalone alpha contains the vendor-neutral kernel. The
 It is an alpha reference kernel, not a production release. The EvalHub adapter has
 local API and isolated OpenShift contract qualification; its Oberon assets and
 [qualification record](docs/qualification/oberon-evalhub-2026-08-31.md) are committed.
-The TrustyAI Service adapter has local contract coverage and an isolated Oberon
-qualification path. Durable distributed idempotency remains roadmap work.
+The TrustyAI Service adapter has local contract coverage and an isolated
+[Oberon qualification](docs/qualification/oberon-trustyai-service-2026-08-31.md).
+Durable distributed idempotency remains roadmap work.
 
 ## Install for development
 
@@ -182,6 +183,7 @@ See [integration points](docs/integrations.md) for the boundary of each adapter.
 - [Oberon EvalHub qualification](deploy/oberon/README.md)
 - [Oberon qualification record](docs/qualification/oberon-evalhub-2026-08-31.md)
 - [Oberon OCI-content qualification](docs/qualification/oberon-evalhub-oci-2026-08-31.md)
+- [Oberon TrustyAI Service qualification](docs/qualification/oberon-trustyai-service-2026-08-31.md)
 - [TrustyAI and EvalHub engagement brief](docs/trustyai-engagement.md)
 - [ADR 0001: proposal-only kernel](docs/adr/0001-proposal-only-kernel.md)
 - [Roadmap](ROADMAP.md)

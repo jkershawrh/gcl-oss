@@ -42,8 +42,8 @@ Released as `v0.2.0a1` with wheel and source artifacts.
   contracts (implemented).
 - Reference runtime-review and promotion policy packs (implemented for TrustyAI
   drift/fairness and EvalHub safety/promotion evidence).
-- Reproducible local and OpenShift demonstrations (implemented for both EvalHub and
-  TrustyAI Service; qualification records remain release evidence).
+- Reproducible local and OpenShift demonstrations with qualification records
+  (implemented for both EvalHub and TrustyAI Service).
 - Joint contract fixtures suitable for upstream review.
 
 Exit criteria: a TrustyAI or EvalHub result produces a signed proposal without giving GCL actuation authority.

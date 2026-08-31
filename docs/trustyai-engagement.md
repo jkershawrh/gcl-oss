@@ -93,7 +93,7 @@ Keep the first session to twenty minutes:
   [Oberon qualification record](qualification/oberon-evalhub-2026-08-31.md), including
   the projected-token success, cross-tenant HTTP 403, and upstream compatibility gaps;
 - the TrustyAI Service integration specification, six-contract test coverage, and
-  Oberon live-compute qualification evidence;
+  [Oberon live-compute qualification evidence](qualification/oberon-trustyai-service-2026-08-31.md);
 - the observed operator/KServe dependency clearly separated from the GCL API contract.
 
 ## Success criteria

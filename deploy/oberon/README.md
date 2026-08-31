@@ -6,6 +6,8 @@ namespace.
 The initial API-contract run and the later registry-content run are recorded in the
 [contract qualification report](../../docs/qualification/oberon-evalhub-2026-08-31.md)
 and [OCI-content qualification report](../../docs/qualification/oberon-evalhub-oci-2026-08-31.md).
+The live runtime-metric path is recorded in the
+[TrustyAI Service qualification report](../../docs/qualification/oberon-trustyai-service-2026-08-31.md).
 
 ## Pinned inputs
 
