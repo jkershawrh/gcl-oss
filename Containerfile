@@ -7,6 +7,12 @@ RUN python -m pip install --no-cache-dir --no-compile . \
     && python -m pip check \
     && gcl-oss --help >/dev/null
 
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.source="https://github.com/jkershawrh/gcl-oss" \
+      org.opencontainers.image.revision="$VCS_REF" \
+      org.opencontainers.image.version="0.3.0a1" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
 USER 1001
 ENTRYPOINT ["gcl-oss"]
 CMD ["--help"]
