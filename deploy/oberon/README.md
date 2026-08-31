@@ -6,9 +6,9 @@ does not modify or reference the `governed-cognitive-loop` namespace.
 ## Pinned inputs
 
 - TrustyAI Operator manifest revision:
-  `547c02508be5fef23d1c90c76772fe11b5297832`
+  `a89d423ca49f70779f5b52f3c24df2efd56b7e4c`
 - TrustyAI Operator image:
-  `quay.io/trustyai/trustyai-service-operator@sha256:2b4adaa22f2e85356f7044fc1546d04a12160ca843ac5e19b0cf99dee5c37b9c`
+  `image-registry.openshift-image-registry.svc:5000/gcl-oss-trustyai/trustyai-service-operator@sha256:2896ac39a2c7fa66f9a986fd3de3b1e13903456ee018905f3818c7948a552ee4`
 - EvalHub image and API contract:
   `quay.io/evalhub/evalhub@sha256:0b9b9cb7121170eb28d7a723b487282cc6ef3640ec9cf9ff6ba50b1bf04a61a1`
   (source revision `42c09dc6aa0a9f6b1cd1e2bb1b7cacc616dcf13e`)
@@ -18,6 +18,11 @@ does not modify or reference the `governed-cognitive-loop` namespace.
 The latest formal TrustyAI Operator release (`v1.38.0`) predates EvalHub. This
 qualification therefore pins a development manifest and image and must not be
 described as a supported Red Hat deployment.
+
+The public `main` operator image was older than its moving source manifest and still
+generated `/healthz` probes, while the pinned EvalHub server exposes
+`/api/v1/health`. The operator image above was built directly from the stated source
+revision and pushed to Oberon's internal registry; its digest is the deployment pin.
 
 The pinned upstream manifest omits the namespace on the
 `manager-auth-delegator` service-account subject. OpenShift rejects that binding.
@@ -30,6 +35,10 @@ Finally, the component emits unprefixed EvalHub ClusterRoles while its controlle
 and manager binding reference `trustyai-service-operator-`-prefixed names. The installer
 creates exact prefixed copies after applying the upstream roles. The unprefixed copies
 remain because the upstream static bindings still reference them.
+
+The rendered leader-election Role and RoleBinding have no metadata namespace. The
+installer always supplies `-n gcl-oss-trustyai` when applying the bundle so they cannot
+inherit whichever project happens to be active in the caller's `oc` context.
 
 ## Isolation and authority
 

@@ -3,8 +3,8 @@ set -eu
 
 OPERATOR_NAMESPACE="gcl-oss-trustyai"
 OPERATOR_REPOSITORY="https://github.com/trustyai-explainability/trustyai-service-operator.git"
-OPERATOR_REVISION="547c02508be5fef23d1c90c76772fe11b5297832"
-OPERATOR_IMAGE="quay.io/trustyai/trustyai-service-operator@sha256:2b4adaa22f2e85356f7044fc1546d04a12160ca843ac5e19b0cf99dee5c37b9c"
+OPERATOR_REVISION="a89d423ca49f70779f5b52f3c24df2efd56b7e4c"
+OPERATOR_IMAGE="image-registry.openshift-image-registry.svc:5000/gcl-oss-trustyai/trustyai-service-operator@sha256:2896ac39a2c7fa66f9a986fd3de3b1e13903456ee018905f3818c7948a552ee4"
 EVALHUB_IMAGE="quay.io/evalhub/evalhub@sha256:0b9b9cb7121170eb28d7a723b487282cc6ef3640ec9cf9ff6ba50b1bf04a61a1"
 RBAC_PROXY_IMAGE="quay.io/opendatahub/odh-kube-rbac-proxy@sha256:c19ed97828e4e5e736334b3ea340ba92a5d0c95f7b21080c6fd7ccf6d36836af"
 
@@ -39,7 +39,7 @@ grep -F "$OPERATOR_IMAGE" "$RENDERED_MANIFEST" >/dev/null
 grep -F "$EVALHUB_IMAGE" "$RENDERED_MANIFEST" >/dev/null
 grep -F "$RBAC_PROXY_IMAGE" "$RENDERED_MANIFEST" >/dev/null
 
-oc apply -f "$RENDERED_MANIFEST"
+oc apply -n "$OPERATOR_NAMESPACE" -f "$RENDERED_MANIFEST"
 
 # The pinned component emits unprefixed ClusterRoles while its controller and
 # manager RoleBinding reference trustyai-service-operator-prefixed names. Preserve
@@ -48,6 +48,7 @@ oc apply -f "$RENDERED_MANIFEST"
 for ROLE_NAME in \
   evalhub-auth-reviewer-role \
   evalhub-collections-access \
+  evalhub-events \
   evalhub-hardware-profiles-reader \
   evalhub-job-config \
   evalhub-jobs-writer \
