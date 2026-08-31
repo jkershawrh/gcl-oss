@@ -4,7 +4,7 @@ metadata:
   name: evalhub-provider-gcl-contract-probe
   namespace: gcl-oss-trustyai
   labels:
-    trustyai.opendatahub.io/evalhub-provider-type: tenant
+    trustyai.opendatahub.io/evalhub-provider-type: system
     trustyai.opendatahub.io/evalhub-provider-name: gcl-contract-probe
 data:
   gcl_contract_probe.yaml: |
@@ -48,7 +48,8 @@ spec:
   tenancy: multi
   database:
     type: sqlite
-  providers: []
+  providers:
+    - gcl-contract-probe
   collections: []
   env:
     - name: LOG_LEVEL

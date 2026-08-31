@@ -55,6 +55,13 @@ This qualifies transport, tenant authorization, API normalization, OCI reference
 binding, policy, signing, and proposal delivery. It does not qualify model execution
 or registry content verification.
 
+The probe is an administrator-selected provider in the isolated EvalHub instance,
+while each evaluation record is tenant scoped. At these pinned revisions, the
+operator mounts `tenant`-labeled provider ConfigMaps below `providers/tenant`, but
+EvalHub 1.0.2 only loads provider files from the parent directory. Selecting the probe
+through `spec.providers` avoids that upstream compatibility gap and keeps the tenant
+authorization test independent from provider installation.
+
 ## Run
 
 From the repository root, with `oc` logged into Oberon:
