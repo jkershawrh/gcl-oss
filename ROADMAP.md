@@ -1,0 +1,67 @@
+# Roadmap
+
+This roadmap describes dependency order, not release dates.
+
+## 0.1 alpha: contracts and ports
+
+- Portable `EvidenceEnvelope` and `DecisionPackage` contracts.
+- Ed25519 signing and verification.
+- Proposal-only receipt semantics.
+- Python protocols for every extension boundary.
+- Architecture, integration, governance, and security specifications.
+- JSON Schema export and golden fixtures.
+
+Exit criteria: a third party can implement an adapter without importing internal modules.
+
+## 0.2 alpha: standalone kernel
+
+- Deterministic orchestration lifecycle.
+- In-memory evidence source and proof recorder.
+- No-op and generic webhook proposal sinks.
+- Registered action schemas and consequence classes.
+- Policy-pack and falsification-check registration.
+- Command-line demonstration with no network dependencies.
+
+Exit criteria: a complete signed cycle runs locally using only built-in components.
+
+## 0.3 alpha: TrustyAI proof
+
+- TrustyAI Service evidence adapter.
+- EvalHub terminal-job and collection-result adapter.
+- Reference drift, fairness, safety, and promotion policy packs.
+- Reproducible local and OpenShift demonstrations.
+- Joint contract fixtures suitable for upstream review.
+
+Exit criteria: a TrustyAI or EvalHub result produces a signed proposal without giving GCL actuation authority.
+
+## 0.4 alpha: operational ecosystem
+
+- CloudEvents ingress and egress.
+- Prometheus and Alertmanager evidence.
+- OpenTelemetry correlation.
+- OPA policy checks.
+- Adapter conformance suite.
+
+## 0.5 beta: Kubernetes reference host
+
+- Secure deployment manifests or chart.
+- Workload identity, RBAC, NetworkPolicy, probes, and telemetry.
+- Tenant isolation and replay tests.
+- Optional configuration resource, with no actuator controller.
+
+## 1.0: stable governance kernel
+
+- Stable contracts and compatibility policy.
+- Cross-language fixtures.
+- At least two independent evidence adapters and proposal consumers.
+- Threat model and independent security review.
+- Multi-tenant and failure-mode qualification.
+- More than one active maintainer.
+
+## Out of scope
+
+- Infrastructure execution and rollback.
+- Reimplementing TrustyAI, EvalHub, Prometheus, or OPA.
+- LLM-selected actions or LLM-enforced constraints.
+- Inferring execution from proposal acknowledgement.
+- A universal payload that copies every upstream schema.

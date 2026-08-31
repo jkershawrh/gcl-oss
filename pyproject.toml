@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gcl-oss"
+version = "0.1.0a1"
+description = "Portable contracts and extension ports for proposal-only governed automation"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "cryptography>=43.0",
+    "eval-type-backport>=0.4; python_version < '3.10'",
+    "pydantic>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/jkershawrh/gcl-oss"
+Documentation = "https://github.com/jkershawrh/gcl-oss/tree/main/docs"
+Issues = "https://github.com/jkershawrh/gcl-oss/issues"
+Source = "https://github.com/jkershawrh/gcl-oss"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
