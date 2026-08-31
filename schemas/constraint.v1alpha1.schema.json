@@ -1,0 +1,80 @@
+{
+  "$defs": {
+    "ConstraintSource": {
+      "enum": [
+        "deterministic",
+        "model_assisted",
+        "deterministic_fallback"
+      ],
+      "title": "ConstraintSource",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/constraint.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "confidence": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "evidence_refs": {
+      "items": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "expression": {
+      "additionalProperties": true,
+      "minProperties": 1,
+      "title": "Expression",
+      "type": "object"
+    },
+    "extensions": {
+      "patternProperties": {
+        "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$": {}
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "hard": {
+      "title": "Hard",
+      "type": "boolean"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "pattern": "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$",
+      "title": "Name",
+      "type": "string"
+    },
+    "rationale": {
+      "maxLength": 8192,
+      "minLength": 1,
+      "title": "Rationale",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/ConstraintSource"
+    }
+  },
+  "required": [
+    "name",
+    "hard",
+    "expression",
+    "confidence",
+    "source",
+    "rationale",
+    "evidence_refs"
+  ],
+  "title": "Constraint",
+  "type": "object"
+}

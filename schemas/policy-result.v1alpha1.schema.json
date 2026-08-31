@@ -1,0 +1,38 @@
+{
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/policy-result.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allowed": {
+      "title": "Allowed",
+      "type": "boolean"
+    },
+    "check_id": {
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Check Id",
+      "type": "string"
+    },
+    "evidence_refs": {
+      "items": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "reason": {
+      "maxLength": 8192,
+      "minLength": 1,
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "check_id",
+    "allowed",
+    "reason"
+  ],
+  "title": "PolicyResult",
+  "type": "object"
+}

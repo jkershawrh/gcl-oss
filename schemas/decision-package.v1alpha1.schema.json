@@ -1,0 +1,620 @@
+{
+  "$defs": {
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "pattern": "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$",
+          "title": "Action",
+          "type": "string"
+        },
+        "consequence": {
+          "$ref": "#/$defs/Consequence"
+        },
+        "constraint_refs": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Constraint Refs",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "objective_values": {
+          "minProperties": 1,
+          "patternProperties": {
+            "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$": {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            }
+          },
+          "title": "Objective Values",
+          "type": "object"
+        },
+        "parameters": {
+          "additionalProperties": true,
+          "title": "Parameters",
+          "type": "object"
+        },
+        "rationale": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "consequence",
+        "rationale",
+        "objective_values",
+        "constraint_refs",
+        "evidence_refs"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "Consequence": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Consequence",
+      "type": "string"
+    },
+    "Constraint": {
+      "additionalProperties": false,
+      "properties": {
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "evidence_refs": {
+          "items": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "expression": {
+          "additionalProperties": true,
+          "minProperties": 1,
+          "title": "Expression",
+          "type": "object"
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$": {}
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "hard": {
+          "title": "Hard",
+          "type": "boolean"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "rationale": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/ConstraintSource"
+        }
+      },
+      "required": [
+        "name",
+        "hard",
+        "expression",
+        "confidence",
+        "source",
+        "rationale",
+        "evidence_refs"
+      ],
+      "title": "Constraint",
+      "type": "object"
+    },
+    "ConstraintSource": {
+      "enum": [
+        "deterministic",
+        "model_assisted",
+        "deterministic_fallback"
+      ],
+      "title": "ConstraintSource",
+      "type": "string"
+    },
+    "EvidenceReference": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Artifact Digest",
+          "type": "string"
+        },
+        "artifact_uri": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Uri"
+        },
+        "envelope_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Envelope Digest",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "producer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        },
+        "schema_uri": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Schema Uri",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "producer",
+        "schema_uri",
+        "artifact_digest",
+        "envelope_digest"
+      ],
+      "title": "EvidenceReference",
+      "type": "object"
+    },
+    "FalsificationResult": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "format": "uuid",
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "check_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Check Id",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "reasoning": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "verdict": {
+          "$ref": "#/$defs/FalsificationVerdict"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "check_id",
+        "verdict",
+        "reasoning"
+      ],
+      "title": "FalsificationResult",
+      "type": "object"
+    },
+    "FalsificationVerdict": {
+      "enum": [
+        "survives",
+        "fails"
+      ],
+      "title": "FalsificationVerdict",
+      "type": "string"
+    },
+    "ObjectiveMode": {
+      "enum": [
+        "deterministic",
+        "model_assisted",
+        "deterministic_fallback"
+      ],
+      "title": "ObjectiveMode",
+      "type": "string"
+    },
+    "ObjectiveSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "constraint_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Constraint Ids",
+          "type": "array"
+        },
+        "evidence_refs": {
+          "items": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "extensions": {
+          "patternProperties": {
+            "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$": {}
+          },
+          "title": "Extensions",
+          "type": "object"
+        },
+        "interpreter": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Interpreter",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/ObjectiveMode"
+        },
+        "rationale": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Rationale",
+          "type": "string"
+        },
+        "terms": {
+          "items": {
+            "$ref": "#/$defs/ObjectiveTerm"
+          },
+          "minItems": 1,
+          "title": "Terms",
+          "type": "array"
+        }
+      },
+      "required": [
+        "interpreter",
+        "mode",
+        "terms",
+        "rationale",
+        "constraint_ids",
+        "evidence_refs"
+      ],
+      "title": "ObjectiveSpec",
+      "type": "object"
+    },
+    "ObjectiveTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "sense": {
+          "const": "minimize",
+          "default": "minimize",
+          "title": "Sense",
+          "type": "string"
+        },
+        "weight": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "weight"
+      ],
+      "title": "ObjectiveTerm",
+      "type": "object"
+    },
+    "PolicyResult": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "title": "Allowed",
+          "type": "boolean"
+        },
+        "check_id": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Check Id",
+          "type": "string"
+        },
+        "evidence_refs": {
+          "items": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "title": "Evidence Refs",
+          "type": "array"
+        },
+        "reason": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_id",
+        "allowed",
+        "reason"
+      ],
+      "title": "PolicyResult",
+      "type": "object"
+    },
+    "ProposerIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "trust_domain": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Trust Domain",
+          "type": "string"
+        },
+        "workload_identity": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Workload Identity",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "workload_identity",
+        "trust_domain"
+      ],
+      "title": "ProposerIdentity",
+      "type": "object"
+    },
+    "RejectedAlternative": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate": {
+          "$ref": "#/$defs/Candidate"
+        },
+        "reason": {
+          "maxLength": 8192,
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "candidate",
+        "reason"
+      ],
+      "title": "RejectedAlternative",
+      "type": "object"
+    },
+    "Scope": {
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Environment"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        },
+        "tenant": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tenant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant"
+      ],
+      "title": "Scope",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/decision-package.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "api_version": {
+      "const": "io.github.jkershawrh.gcl/v1alpha1",
+      "default": "io.github.jkershawrh.gcl/v1alpha1",
+      "title": "Api Version",
+      "type": "string"
+    },
+    "candidates": {
+      "items": {
+        "$ref": "#/$defs/Candidate"
+      },
+      "minItems": 1,
+      "title": "Candidates",
+      "type": "array"
+    },
+    "constraints": {
+      "items": {
+        "$ref": "#/$defs/Constraint"
+      },
+      "minItems": 1,
+      "title": "Constraints",
+      "type": "array"
+    },
+    "correlation_id": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Correlation Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/EvidenceReference"
+      },
+      "minItems": 1,
+      "title": "Evidence",
+      "type": "array"
+    },
+    "evidence_refs": {
+      "items": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "title": "Expires At",
+      "type": "string"
+    },
+    "extensions": {
+      "patternProperties": {
+        "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$": {}
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "falsification_results": {
+      "items": {
+        "$ref": "#/$defs/FalsificationResult"
+      },
+      "minItems": 1,
+      "title": "Falsification Results",
+      "type": "array"
+    },
+    "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "const": "DecisionPackage",
+      "default": "DecisionPackage",
+      "title": "Kind",
+      "type": "string"
+    },
+    "objective": {
+      "$ref": "#/$defs/ObjectiveSpec"
+    },
+    "policy_results": {
+      "items": {
+        "$ref": "#/$defs/PolicyResult"
+      },
+      "title": "Policy Results",
+      "type": "array"
+    },
+    "proposer": {
+      "$ref": "#/$defs/ProposerIdentity"
+    },
+    "rejected_alternatives": {
+      "items": {
+        "$ref": "#/$defs/RejectedAlternative"
+      },
+      "title": "Rejected Alternatives",
+      "type": "array"
+    },
+    "scope": {
+      "$ref": "#/$defs/Scope"
+    },
+    "selected_candidate_id": {
+      "format": "uuid",
+      "title": "Selected Candidate Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "expires_at",
+    "correlation_id",
+    "scope",
+    "proposer",
+    "evidence",
+    "evidence_refs",
+    "constraints",
+    "objective",
+    "candidates",
+    "selected_candidate_id",
+    "falsification_results"
+  ],
+  "title": "DecisionPackage",
+  "type": "object"
+}

@@ -6,10 +6,11 @@ GCL OSS integrates at evidence, policy, proposal, proof, telemetry, and outcome 
 
 | Integration | GCL port | Purpose | Priority |
 |---|---|---|---|
-| TrustyAI Service | `EvidenceSource` | Drift, fairness, and model-monitoring evidence. | P0 |
-| EvalHub | `EvidenceSource` | Terminal evaluation and collection-compliance evidence. | P0 |
-| Generic CloudEvents | `EvidenceSource`, `ProposalSink` | Portable asynchronous transport. | P0 |
-| No-op and webhook consumers | `ProposalSink` | Standalone testing and generic external admission. | P0 |
+| TrustyAI Service | `EvidenceSource`, `ConstraintClassifier` | Drift, fairness, and model-monitoring evidence plus reference governance constraints. | P0 |
+| EvalHub | `EvidenceSource`, `ConstraintClassifier` | Terminal evaluation and collection-compliance evidence plus reference promotion constraints. | P0 |
+| No-op consumer | `ProposalSink` | Standalone testing without external authority. | P0 |
+| Generic CloudEvents | `EvidenceSource`, `ProposalSink` | Portable asynchronous transport. | P1 |
+| Authenticated webhook | `ProposalSink` | Generic external admission with explicit retry semantics. | P1 |
 | Prometheus | `EvidenceSource` | Range-query operational evidence. | P1 |
 | Alertmanager | `EvidenceSource` | Alert state transitions as evidence. | P1 |
 | OpenTelemetry | `TelemetrySink` | Correlation across evaluation, proposal, authority, and outcome. | P1 |
@@ -34,6 +35,8 @@ The adapter consumes TrustyAI-computed drift, fairness, and monitoring results. 
 
 TrustyAI owns the metric computation. GCL OSS must not reproduce the algorithm or change a passing result to failing. A policy pack decides how a valid result constrains proposals.
 
+The integration is intentionally split in two. The evidence adapter only normalizes a TrustyAI result. A separately versioned policy pack derives namespaced, evidence-bound constraints such as review required or promotion blocked. This keeps a source-schema change from silently changing governance policy and lets TrustyAI contributors review the adapter without adopting GCL's proposal semantics.
+
 ## EvalHub
 
 EvalHub is the preferred first pre-deployment integration because it already presents a unified API across evaluation frameworks and collections.
@@ -45,8 +48,9 @@ The first end-to-end demo should be:
 ```text
 failed safety collection
   -> EvalHub result envelope
-  -> deterministic policy constraint
-  -> governance.gcl.io/request_review or governance.gcl.io/hold candidate
+  -> deterministic, evidence-bound promotion constraint
+  -> action-free objective over the current constraints
+  -> io.github.jkershawrh.gcl.governance/request_review or hold candidate
   -> falsification checks
   -> signed DecisionPackage
   -> no-op or human-review ProposalSink
@@ -76,15 +80,20 @@ CloudEvents is the preferred asynchronous transport envelope. Event type and sch
 
 Initial event families should include:
 
-- `io.gcl.evidence.accepted.v1alpha1`;
-- `io.gcl.evidence.rejected.v1alpha1`;
-- `io.gcl.decision.proposed.v1alpha1`;
-- `io.gcl.decision.rejected.v1alpha1`;
-- `io.gcl.outcome.observed.v1alpha1`.
+- `io.github.jkershawrh.gcl.evidence.accepted.v1alpha1`;
+- `io.github.jkershawrh.gcl.evidence.rejected.v1alpha1`;
+- `io.github.jkershawrh.gcl.policy.evaluated.v1alpha1`;
+- `io.github.jkershawrh.gcl.constraint.classified.v1alpha1`;
+- `io.github.jkershawrh.gcl.objective.interpreted.v1alpha1`;
+- `io.github.jkershawrh.gcl.falsification.completed.v1alpha1`;
+- `io.github.jkershawrh.gcl.decision.proposed.v1alpha1`;
+- `io.github.jkershawrh.gcl.decision.rejected.v1alpha1`;
+- `io.github.jkershawrh.gcl.decision.delivery_unknown.v1alpha1`;
+- `io.github.jkershawrh.gcl.outcome.observed.v1alpha1`.
 
 ## Proof recorders
 
-The port should support append-only ledgers, OCI result artifacts, transparency logs, and signed object storage. The recorder returns a receipt identifier. Recorder failure is visible and policy-configurable, but a receipt never grants execution authority.
+The port should support append-only ledgers, OCI result artifacts, transparency logs, and signed object storage. The recorder returns a receipt identifier. The standalone kernel fails closed on a recorder error before delivery; if the final write fails after delivery, it preserves the acknowledged delivery and reports the proof failure without redelivering. A receipt never grants execution authority.
 
 ## Proposal consumers
 

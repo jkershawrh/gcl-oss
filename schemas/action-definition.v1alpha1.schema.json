@@ -1,0 +1,54 @@
+{
+  "$defs": {
+    "Consequence": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Consequence",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/action-definition.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "pattern": "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$",
+      "title": "Action",
+      "type": "string"
+    },
+    "allowed_consequences": {
+      "items": {
+        "$ref": "#/$defs/Consequence"
+      },
+      "minItems": 1,
+      "title": "Allowed Consequences",
+      "type": "array",
+      "uniqueItems": true
+    },
+    "parameter_schema": {
+      "additionalProperties": true,
+      "title": "Parameter Schema",
+      "type": "object"
+    },
+    "required_falsification_checks": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Required Falsification Checks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "action",
+    "parameter_schema",
+    "allowed_consequences",
+    "required_falsification_checks"
+  ],
+  "title": "ActionDefinition",
+  "type": "object"
+}

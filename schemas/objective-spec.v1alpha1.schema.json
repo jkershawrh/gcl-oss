@@ -1,0 +1,104 @@
+{
+  "$defs": {
+    "ObjectiveMode": {
+      "enum": [
+        "deterministic",
+        "model_assisted",
+        "deterministic_fallback"
+      ],
+      "title": "ObjectiveMode",
+      "type": "string"
+    },
+    "ObjectiveTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "sense": {
+          "const": "minimize",
+          "default": "minimize",
+          "title": "Sense",
+          "type": "string"
+        },
+        "weight": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "weight"
+      ],
+      "title": "ObjectiveTerm",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/objective-spec.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "constraint_ids": {
+      "items": {
+        "format": "uuid",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Constraint Ids",
+      "type": "array"
+    },
+    "evidence_refs": {
+      "items": {
+        "pattern": "^sha256:[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidence Refs",
+      "type": "array"
+    },
+    "extensions": {
+      "patternProperties": {
+        "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$": {}
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "interpreter": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Interpreter",
+      "type": "string"
+    },
+    "mode": {
+      "$ref": "#/$defs/ObjectiveMode"
+    },
+    "rationale": {
+      "maxLength": 8192,
+      "minLength": 1,
+      "title": "Rationale",
+      "type": "string"
+    },
+    "terms": {
+      "items": {
+        "$ref": "#/$defs/ObjectiveTerm"
+      },
+      "minItems": 1,
+      "title": "Terms",
+      "type": "array"
+    }
+  },
+  "required": [
+    "interpreter",
+    "mode",
+    "terms",
+    "rationale",
+    "constraint_ids",
+    "evidence_refs"
+  ],
+  "title": "ObjectiveSpec",
+  "type": "object"
+}

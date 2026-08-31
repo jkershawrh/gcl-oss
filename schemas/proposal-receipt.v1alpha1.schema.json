@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "ProposalStatus": {
+      "enum": [
+        "accepted",
+        "rejected",
+        "deferred"
+      ],
+      "title": "ProposalStatus",
+      "type": "string"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/proposal-receipt.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "consumer": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Consumer",
+      "type": "string"
+    },
+    "execution_verified": {
+      "default": false,
+      "title": "Execution Verified",
+      "type": "boolean"
+    },
+    "external_id": {
+      "anyOf": [
+        {
+          "maxLength": 1024,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "External Id"
+    },
+    "package_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Package Digest",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "maxLength": 8192,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "status": {
+      "$ref": "#/$defs/ProposalStatus"
+    }
+  },
+  "required": [
+    "status",
+    "consumer",
+    "package_digest"
+  ],
+  "title": "ProposalReceipt",
+  "type": "object"
+}

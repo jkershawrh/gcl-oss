@@ -1,0 +1,57 @@
+{
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/evidence-reference.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifact_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Artifact Digest",
+      "type": "string"
+    },
+    "artifact_uri": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Artifact Uri"
+    },
+    "envelope_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Envelope Digest",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 512,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "producer": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Producer",
+      "type": "string"
+    },
+    "schema_uri": {
+      "maxLength": 2048,
+      "minLength": 1,
+      "title": "Schema Uri",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "producer",
+    "schema_uri",
+    "artifact_digest",
+    "envelope_digest"
+  ],
+  "title": "EvidenceReference",
+  "type": "object"
+}

@@ -2,7 +2,7 @@
 
 This roadmap describes dependency order, not release dates.
 
-## 0.1 alpha: contracts and ports
+## 0.1 alpha: contracts and ports (complete)
 
 - Portable `EvidenceEnvelope` and `DecisionPackage` contracts.
 - Ed25519 signing and verification.
@@ -13,14 +13,18 @@ This roadmap describes dependency order, not release dates.
 
 Exit criteria: a third party can implement an adapter without importing internal modules.
 
-## 0.2 alpha: standalone kernel
+## 0.2 alpha: standalone kernel (complete on merge)
 
 - Deterministic orchestration lifecycle.
 - In-memory evidence source and proof recorder.
-- No-op and generic webhook proposal sinks.
+- No-op proposal sink.
 - Registered action schemas and consequence classes.
+- Evidence-bound constraint classification and action-free objective interpretation.
 - Policy-pack and falsification-check registration.
 - Command-line demonstration with no network dependencies.
+- Process-local, event-loop-local concurrent replay protection.
+
+Deferred to 0.4: generic webhook delivery, which requires an explicit authentication, retry, and receipt contract rather than a demo-only HTTP call.
 
 Exit criteria: a complete signed cycle runs locally using only built-in components.
 
@@ -41,6 +45,8 @@ Exit criteria: a TrustyAI or EvalHub result produces a signed proposal without g
 - OpenTelemetry correlation.
 - OPA policy checks.
 - Adapter conformance suite.
+- Generic authenticated webhook proposal sink.
+- Durable idempotency port for multi-process and multi-replica hosts.
 
 ## 0.5 beta: Kubernetes reference host
 

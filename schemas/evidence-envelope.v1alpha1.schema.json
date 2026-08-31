@@ -1,0 +1,335 @@
+{
+  "$defs": {
+    "Assurance": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact_uri": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact Uri"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "confidence",
+        "digest"
+      ],
+      "title": "Assurance",
+      "type": "object"
+    },
+    "EvidenceMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "causation_id": {
+          "anyOf": [
+            {
+              "maxLength": 512,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Causation Id"
+        },
+        "correlation_id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Correlation Id",
+          "type": "string"
+        },
+        "expires_at": {
+          "format": "date-time",
+          "title": "Expires At",
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 512,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "observed_at": {
+          "format": "date-time",
+          "title": "Observed At",
+          "type": "string"
+        },
+        "producer": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Producer",
+          "type": "string"
+        },
+        "schema_uri": {
+          "maxLength": 2048,
+          "minLength": 1,
+          "title": "Schema Uri",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "correlation_id",
+        "observed_at",
+        "expires_at",
+        "producer",
+        "schema_uri"
+      ],
+      "title": "EvidenceMetadata",
+      "type": "object"
+    },
+    "Measurement": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/MeasurementStatus",
+          "default": "unknown"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Value"
+        },
+        "window_end": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window End"
+        },
+        "window_start": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window Start"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "Measurement",
+      "type": "object"
+    },
+    "MeasurementStatus": {
+      "enum": [
+        "passed",
+        "failed",
+        "warning",
+        "unknown"
+      ],
+      "title": "MeasurementStatus",
+      "type": "string"
+    },
+    "Scope": {
+      "additionalProperties": false,
+      "properties": {
+        "environment": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Environment"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        },
+        "tenant": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Tenant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tenant"
+      ],
+      "title": "Scope",
+      "type": "object"
+    },
+    "Subject": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 1024,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Type",
+          "type": "string"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "Subject",
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/jkershawrh/gcl-oss/main/schemas/evidence-envelope.v1alpha1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "api_version": {
+      "const": "io.github.jkershawrh.gcl/v1alpha1",
+      "default": "io.github.jkershawrh.gcl/v1alpha1",
+      "title": "Api Version",
+      "type": "string"
+    },
+    "assurance": {
+      "$ref": "#/$defs/Assurance"
+    },
+    "extensions": {
+      "patternProperties": {
+        "^[a-z][a-z0-9.-]*/[a-z][a-z0-9._-]*$": {}
+      },
+      "title": "Extensions",
+      "type": "object"
+    },
+    "kind": {
+      "const": "EvidenceEnvelope",
+      "default": "EvidenceEnvelope",
+      "title": "Kind",
+      "type": "string"
+    },
+    "measurement": {
+      "$ref": "#/$defs/Measurement"
+    },
+    "metadata": {
+      "$ref": "#/$defs/EvidenceMetadata"
+    },
+    "scope": {
+      "$ref": "#/$defs/Scope"
+    },
+    "subject": {
+      "$ref": "#/$defs/Subject"
+    }
+  },
+  "required": [
+    "metadata",
+    "scope",
+    "subject",
+    "measurement",
+    "assurance"
+  ],
+  "title": "EvidenceEnvelope",
+  "type": "object"
+}

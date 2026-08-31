@@ -1,0 +1,39 @@
+{
+  "api_version": "io.github.jkershawrh.gcl/v1alpha1",
+  "kind": "EvidenceEnvelope",
+  "metadata": {
+    "id": "evalhub-job-42",
+    "correlation_id": "release-candidate-17",
+    "causation_id": "evaluation-request-17",
+    "observed_at": "2026-08-31T12:00:00Z",
+    "expires_at": "2026-08-31T12:15:00Z",
+    "producer": "https://evalhub.example/api/v1/evaluations/jobs/42",
+    "schema_uri": "https://evalhub.example/schemas/job-result/v1"
+  },
+  "scope": {
+    "tenant": "team-a",
+    "namespace": "models",
+    "environment": "staging"
+  },
+  "subject": {
+    "type": "model",
+    "id": "fraud-detector",
+    "version": "v7"
+  },
+  "measurement": {
+    "name": "safety-collection",
+    "value": 0.62,
+    "unit": "score",
+    "threshold": 0.9,
+    "status": "failed"
+  },
+  "assurance": {
+    "confidence": 0.98,
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "artifact_uri": "oci://registry.example/evalhub/results/42@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "extensions": {
+    "evalhub.io/job-id": "42",
+    "evalhub.io/provider": "garak"
+  }
+}

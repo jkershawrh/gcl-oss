@@ -7,7 +7,9 @@ GCL OSS is the governed decision layer between evidence and authority. It conver
 ```text
                        ┌─────────────────────────────────┐
 EvidenceSource ───────>│ validation and normalization    │
-ContextProvider ──────>│ policy checks                   │
+PolicyCheck ──────────>│ policy checks                   │
+                       │ constraint classification        │
+                       │ objective interpretation         │
                        │ deterministic planner            │
                        │ falsification checks             │
                        │ DecisionPackage builder + signer │
@@ -32,33 +34,38 @@ ContextProvider ──────>│ policy checks                   │
 Contracts are the stable interoperability surface:
 
 - `EvidenceEnvelope` normalizes producer identity, schema, tenant scope, subject, measurement, assurance, and freshness.
-- `Candidate` describes a namespaced proposed action, consequence, rationale, parameters, and evidence references.
+- `EvidenceReference` is the compact signed manifest entry for producer, evidence ID, schema, artifact digest and URI, and canonical envelope digest.
+- `PolicyResult` records an allow or deny decision and its evidence references.
+- `Constraint` records a namespaced hard or soft restriction, structured expression, provenance mode, confidence, and evidence references.
+- `ObjectiveSpec` records namespaced weighted terms, every governing constraint, evidence references, and whether deterministic, model-assisted, or fallback framing was used. It has no action field.
+- `Candidate` describes a namespaced proposed action, consequence, rationale, parameters, a normalized value for every objective cost term, constraints covered, and evidence references. Objective weights sum to one.
 - `FalsificationResult` records an attempt to disconfirm a candidate.
-- `DecisionPackage` binds the selected candidate, alternatives, evidence, scope, proposer, falsification, and validity window.
+- `DecisionPackage` binds policy results, constraints, objective, selected candidate, alternatives, evidence, scope, proposer, falsification, and validity window.
 - `SignedDecisionPackage` binds the package digest to an Ed25519 signing identity.
 - `ProposalReceipt` reports delivery or admission status and structurally refuses execution claims.
 - `OutcomeRecord` represents later, independently observed results.
 
-Producer-specific details use namespaced extensions and immutable artifact references. The contracts do not mirror complete upstream response bodies.
+Producer-specific details use namespaced extensions and immutable artifact references. The signed package carries a compact evidence manifest but does not mirror complete upstream response bodies.
 
 ### Governance kernel
 
-The target kernel owns this lifecycle:
+The implemented standalone kernel owns this lifecycle:
 
 1. Receive evidence from one or more sources.
 2. Authenticate the source at the host boundary.
-3. Validate schema, tenant scope, subject, freshness, and provenance.
-4. Evaluate deterministic policy checks.
-5. Frame an objective, optionally using an LLM with a deterministic fallback.
-6. Ask a deterministic planner for candidates.
-7. Enforce action schema, consequence class, and hard constraints.
-8. Run the required falsification checks for the selected candidate.
-9. Record rejected alternatives.
-10. Build and sign the DecisionPackage.
-11. Offer it to a proposal sink.
-12. Correlate later outcomes from an independent source.
+3. Validate the envelope schema, tenant scope, subject, and freshness.
+4. Evaluate deterministic producer, schema, digest, confidence, and domain policy checks.
+5. Derive evidence-bound hard and soft constraints, using deterministic fallback at any model-assisted boundary.
+6. Frame an action-free objective over every current constraint.
+7. Ask a deterministic planner for candidates.
+8. Recompute weighted candidate costs and enforce action schema, consequence class, evidence references, objective minimization, and coverage of every hard constraint.
+9. Run the required falsification checks for the selected candidate.
+10. Record rejected alternatives.
+11. Bound package expiry by the earliest evidence expiry, then build and sign the complete DecisionPackage.
+12. Offer it to a proposal sink.
+13. Correlate later outcomes from an independent source.
 
-The kernel must work in memory with a no-op proposal sink. Network services are adapters, not preconditions.
+The kernel works in memory with a no-op proposal sink. Network services are adapters, not preconditions.
 
 ### Ports
 
@@ -68,15 +75,31 @@ Ports are small interfaces owned by GCL OSS:
 |---|---|---|
 | `EvidenceSource` | inbound | Supplies normalized evidence envelopes. |
 | `PolicyCheck` | internal | Returns a deterministic allow or deny result justified by evidence. |
+| `ConstraintClassifier` | internal | Derives evidence-bound hard and soft constraints with deterministic fallback. |
+| `ObjectiveInterpreter` | internal | Frames an action-free objective over all current constraints. |
 | `Planner` | internal | Produces candidates and explicitly identifies deterministic behavior. |
-| `FalsificationCheck` | internal | Attempts to disconfirm a candidate. |
+| `FalsificationCheck` | internal | Deterministically attempts to disconfirm a candidate. |
 | `ProposalSink` | outbound | Offers a signed package to an external authority. |
 | `ProofRecorder` | outbound | Records a receipt without granting authority. |
 | `OutcomeSource` | inbound | Supplies independently observed outcomes. |
-| `KeyProvider` | inbound | Supplies signing and verification keys or handles. |
+| `Signer` | outbound | Signs canonical package bytes without exposing private key material to the kernel. |
 | `TelemetrySink` | outbound | Emits correlated metrics, logs, and traces. |
 
 Python protocols are the initial binding. Remote protocols will be standardized only after two independent adapters demonstrate the same need.
+
+### Replay and concurrency
+
+The standalone kernel derives a cycle key from producer identity, evidence identity, producer-supplied artifact digest, canonical normalized-envelope digest, correlation, and scope. An exact retry returns the cached result and does not deliver the proposal again. Each kernel instance serializes cycles within one async event loop so concurrent duplicate retries cannot race past the cache.
+
+If the proposal consumer times out, raises an error, or returns a receipt for a different package digest, the result is `delivery_unknown`. The signed package and uncertainty are cached, and an exact retry is not delivered automatically. An operator must reconcile the consumer before deliberately clearing or superseding that result. This avoids converting ambiguous transport failure into duplicate consequential work.
+
+If final proof recording fails after successful proposal delivery, the delivery result is cached first. The kernel reports the proof failure explicitly and does not redeliver on replay.
+
+This cache is process-local and its concurrency guard is event-loop-local. A multi-thread, multi-process, or multi-replica host must implement durable distributed idempotency before it can claim the same guarantee across execution contexts.
+
+### Canonical signatures
+
+The alpha signer receives the UTF-8 bytes of the validated package's JSON representation with null fields omitted, object keys sorted, compact separators, finite JSON numbers only, and non-ASCII characters escaped. The package digest and Ed25519 signature cover exactly those bytes. Cross-language golden vectors and a final canonicalization standard are beta prerequisites; consumers should pin the alpha package version rather than assume a future stable byte format.
 
 ### Adapters
 
@@ -111,11 +134,11 @@ A future Kubernetes resource may configure a GCL deployment. It must not make GC
 
 ### Evidence boundary
 
-Evidence is an assertion by a producer. A digest binds the normalized envelope to an artifact, but does not make the producer correct. Policy decides which producer identities, schemas, confidence floors, and age limits are acceptable.
+Evidence is an assertion by a producer. The assurance digest identifies the source artifact, while the cycle key also binds the canonical normalized envelope. Neither makes the producer correct or proves the artifact relationship. The host authenticates transport identity, and policy decides which producer identities, schemas, digests, confidence floors, and age limits are acceptable.
 
 ### LLM honesty boundary
 
-An LLM can summarize context or frame objective terms. It cannot emit an action candidate, mark a constraint satisfied, suppress a failed falsification check, sign a package, or call a proposal sink.
+A model can assist with classifying ambiguous evidence or framing objective terms. Its output is schema-limited, evidence-bound, mode-labelled, and behind a deterministic fallback. The objective must retain every current constraint. The deterministic kernel recomputes candidate costs from the signed terms and rejects a selection that is not minimal or does not cover every hard constraint. Model-assisted code cannot emit an action candidate, mark a constraint satisfied, suppress a failed falsification check, sign a package, or call a proposal sink.
 
 ### Proposal boundary
 
@@ -131,7 +154,7 @@ Outcome observations must come from a source independent of the proposal acknowl
 
 ## Contract evolution
 
-The current contracts are `gcl.io/v1alpha1`. Alpha contracts may change between minor releases. Before beta:
+The current contracts are `io.github.jkershawrh.gcl/v1alpha1`. Schemas, action names, extension keys, and CloudEvents use the conventional reverse-DNS namespace for the `jkershawrh` GitHub account. Alpha contracts may change between minor releases. Before beta:
 
 1. publish JSON Schema fixtures;
 2. add cross-language golden tests;
@@ -147,8 +170,12 @@ Stable versions are never changed in place.
 src/gcl_oss/
   contracts.py       portable versioned models and signatures
   ports.py           structural extension interfaces
+  registry.py        namespaced action definitions and parameter schemas
+  kernel.py          deterministic proposal-only orchestration
+  builtin.py         offline reference components
+  schemas.py         deterministic JSON Schema export
 tests/               contract and boundary tests
 docs/                architecture, ADRs, and integration specifications
 ```
 
-The orchestration kernel, built-in adapters, and conformance fixtures will be added without importing the production proof implementation.
+The orchestration kernel, built-in in-memory adapters, no-op proposal sink, schema fixtures, and offline demonstration are implemented without importing the production proof implementation. External adapters and the conformance kit remain roadmap work.

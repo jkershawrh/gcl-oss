@@ -13,7 +13,7 @@ The earlier production proof implementation validated a governed decision cycle 
 
 GCL OSS owns normalized decision synthesis through a signed, expiry-bounded proposal. It does not authorize or execute the proposal.
 
-The architecture uses a small core with ports for evidence, deterministic policy, planning, falsification, proposal delivery, proof recording, outcome observation, keys, and telemetry.
+The architecture uses a small core with ports for evidence, deterministic policy, constraint classification, objective interpretation, planning, falsification, proposal delivery, proof recording, outcome observation, signing, and telemetry. The signer receives canonical bytes and does not expose private key material to the kernel.
 
 Proposal acknowledgements cannot set `execution_verified=true`. Execution evidence enters later through an independent outcome source.
 
